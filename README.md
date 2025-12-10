@@ -1,89 +1,121 @@
-🎟️ EventTix – MERN Event Booking System
-A Complete Multi‑Panel Event Management & Ticket Booking Platform
+A scalable event management and ticket booking system built using the MERN Stack, featuring three fully isolated panels:
 
-<p align="center"> <img src="https://img.shields.io/badge/MERN-Full%20Stack-green?style=for-the-badge" /> <img src="https://img.shields.io/badge/Version-1.0-blue?style=for-the-badge" /> <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" /> </p> <p align="center"> <strong>⚡ User Panel • 🎤 Organizer Panel • 🛠 Admin Panel</strong><br/> Built with <strong>MERN Stack + TailwindCSS</strong> </p>
-📌 Overview
-EventTix is a full-featured MERN application that allows users to browse events, book tickets, manage wallets, and download QR‑coded tickets.
-Organizers can create and manage events, while admins oversee event approval, user management, payments, and platform integrity.
+👤 User Panel – Browse events, book tickets, manage wallet
 
-This project is designed with modular architecture, role-based access, and scalable folder structure.
+🎤 Organizer Panel – Create/manage events, monitor seats, view analytics
+
+🛡 Admin Panel – Oversee organizers, event approvals, payments & venues
+
+EventTix is designed with modular architecture, role‑based access control, and a clean folder structure suitable for production‑grade deployment.
+
+📑 Table of Contents
+Features
+
+Tech Stack
+
+System Architecture
+
+Project Structure
+
+Installation
+
+Environment Variables
+
+Running the Project
+
+API Base URL
+
+Screenshots
+
+Future Enhancements
+
+Author
 
 ✨ Features
 👤 User Panel
-🔍 Browse & search events
+Browse & search events
 
-📄 Event details page
+View event details
 
-🪑 Seat selection interface
+Seat selection with visual mapping
 
-🎟 Ticket booking with QR generator
+Ticket booking + QR generation
 
-👛 Wallet (add money, transactions)
+Wallet (add balance, transaction history)
 
-📁 My Tickets page
+Manage profile
 
-⭐ Rating & Review system
+View purchased tickets
 
-🙍 Profile management
+Leave reviews on events
 
-🧑‍💼 Organizer Panel
-📊 Organizer dashboard
+🎤 Organizer Panel
+Organizer login
 
-🎫 Create new events
+Dashboard with KPIs
 
-🛠 Manage listed events
+Create and manage events
 
-🔴 Live seat monitoring
+Live seat status updates
 
-👥 Attendee list view
+Attendee list
 
-📈 Reports & analytics
+Revenue/booking reports
 
 🛡 Admin Panel
-📝 Verify organizers
+User & Organizer management
 
-✔ Approve / Reject events
+Organizer verification system
 
-👤 Manage users & organizers
+Event approval workflow
 
-💳 Manage payments & refunds
+Payment & refund management
 
-🏟 Venue management
+Venue inventory management
 
-📉 Admin dashboard insights
+Admin analytics dashboard
 
 🧱 Tech Stack
-👨‍💻 Frontend
+Frontend
 React (Vite)
 
-Tailwind CSS
+TailwindCSS
 
-React Router
+React Router v6
 
 Axios
 
-Context API (Auth & State)
+Context API
 
-🖥 Backend
-Node.js + Express
+Backend
+Node.js + Express.js
 
 MongoDB + Mongoose
 
-JWT authentication
+JWT Authentication
 
-Multer (uploads)
+Multer (Media upload)
 
-bcrypt (password hashing)
+bcrypt (Password hashing)
 
-🗂 Project Structure
+🏗 System Architecture
+User → Frontend (React)
+        ↓ Axios
+Backend (Node + Express) → MongoDB
+        ↑ JWT Auth
+Organizer Panel (React)
+Admin Panel (React)
+Each panel is isolated for cleaner maintenance and deployment.
+
+📂 Project Structure
 event-booking-system/
 │
 ├── backend/
 │   ├── config/
 │   ├── controllers/
+│   ├── middleware/
 │   ├── routes/
 │   ├── models/
-│   ├── middleware/
 │   ├── utils/
 │   └── server.js
 │
@@ -91,49 +123,74 @@ event-booking-system/
     ├── user/
     ├── organizer/
     └── admin/
-🚀 Setup Instructions
-🛠 Backend Setup
+
+
+
+⚙️ Installation
+1️⃣ Clone Repository
+git clone https://github.com/paraspathania/EventOrbit.git
+cd event-booking-system
+
+🔧 Backend Setup
 cd backend
 npm install
-Create .env file:
-
-MONGO_URI=your_mongodb_url
-JWT_SECRET=your_secret_key
-PORT=5000
-Start server:
-
 npm run dev
-💻 Frontend Setup (User Panel example)
+
+🌐 Frontend Setup (for each panel)
+User Panel:
 cd frontend/user
 npm install
 npm run dev
-Repeat for:
 
-frontend/organizer
-frontend/admin
+Organizer Panel:
+cd frontend/organizer
+npm install
+npm run dev
+
+Admin Panel:
+cd frontend/admin
+npm install
+npm run dev
+
+🔐 Environment Variables
+Create a .env file in /backend:
+
+PORT=5000
+MONGO_URI=your_mongodb_connection
+JWT_SECRET=your_secret_key
+EMAIL_USER=optional_email_for_sending_notifications
+EMAIL_PASS=optional_email_password
 🔗 API Base URL
+Frontend should call:
+
 http://localhost:5000/api
-📸 Screenshots (Add your UI here later)
-🖼️ You can replace these with your project images once UI is ready.
+🖼 Screenshots
+(Add real screenshots later)
 
-📍 Home Page
-📍 Event Details
-📍 Seat Selection
-📍 Booking / Ticket Page
-📍 Wallet
-📍 Organizer Dashboard
-📍 Admin Panel
-📘 Future Enhancements
-🔔 Realtime seats update using Socket.io
+Home Page
 
-💳 Razorpay / Stripe Integration
+Event Details
 
-📡 Email notifications
+Seat Selection
 
-🤝 Organizer payout settlements
+Booking Confirmation
 
-🌙 Dark Mode UI
+Wallet
 
-👨‍💻 Authors
-Paras Pathania, Prince Kumar, Anuj Ingole
-Full Stack MERN Developers
+Organizer Dashboard
+
+Admin Panel
+
+🚀 Future Enhancements
+Realtime seat updates (Socket.io)
+
+Razorpay/Stripe payment gateway
+
+Push notifications + email alerts
+
+Organizer payout settlements
+
+Dark mode UI
+
+Multi‑language support
+
