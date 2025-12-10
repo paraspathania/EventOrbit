@@ -2,7 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import eventRoutes from "./routes/event_routes.js"; // Fixed import path
+import eventRoutes from "./routes/event_routes.js";
+import authRoutes from "./routes/auth_routes.js";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(cors());
 
 // Routes
 app.use("/api/events", eventRoutes);
+app.use("/api/auth", authRoutes);
 
 // Database Connection
 mongoose.connect(MONGO_URI)
