@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Check, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, Check, ArrowRight, Loader2, Sparkles, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Signup = () => {
     const { signup } = useAuth();
     const navigate = useNavigate();
-
-    // 'user' or 'organizer'
-    const [isOrganizer, setIsOrganizer] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -18,6 +15,10 @@ const Signup = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // ... existing logic ...
 
     const handleChange = (e) => {
         setFormData({
@@ -42,8 +43,8 @@ const Signup = () => {
 
         setLoading(true);
 
-        const role = isOrganizer ? 'organizer' : 'user';
-        const { success, error: apiError } = await signup(formData.name, formData.email, formData.password, role);
+        // Always register as 'user'
+        const { success, error: apiError } = await signup(formData.name, formData.email, formData.password, 'user');
 
         if (success) {
             navigate('/');
@@ -57,44 +58,26 @@ const Signup = () => {
         <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-[var(--bg-card)] rounded-2xl shadow-xl overflow-hidden border border-[var(--border-color)]">
                 {/* Header */}
-                <div className={`p-8 text-center text-white transition-colors duration-300 ${isOrganizer ? 'bg-gradient-to-br from-purple-600 to-indigo-700' : 'bg-gradient-to-br from-blue-600 to-cyan-600'}`}>
-                    <h2 className="text-3xl font-bold mb-2">Create Account</h2>
-                    <p className="text-white/90">
-                        {isOrganizer ? "Start managing events today!" : "Join us and explore amazing events."}
+                {/* Header */}
+                <div className="relative p-8 text-center text-white transition-colors duration-300 bg-gradient-to-br from-[#FFDA8A] to-[#ffc107]">
+                    <Link to="/" className="absolute top-4 left-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-gray-900 transition-colors" title="Back to Home">
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <h2 className="text-3xl font-bold mb-2 text-gray-900">Create Account</h2>
+                    <p className="text-gray-900/90">
+                        Join us and explore amazing events.
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-5">
-                    {/* Role Toggle */}
-                    <div
-                        onClick={() => setIsOrganizer(!isOrganizer)}
-                        className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-start gap-4 mb-6 group ${isOrganizer
-                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                : 'border-[var(--border-color)] hover:border-blue-300'
-                            }`}
-                    >
-                        <div className={`p-2 rounded-lg ${isOrganizer ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-500'} transition-colors`}>
-                            <Sparkles size={24} />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between items-center">
-                                <h3 className={`font-semibold ${isOrganizer ? 'text-purple-700 dark:text-purple-400' : 'text-[var(--text-page)]'}`}>
-                                    Become an Organizer
-                                </h3>
-                                {isOrganizer && <Check size={18} className="text-purple-600" />}
-                            </div>
-                            <p className="text-xs text-[var(--text-muted)] mt-1">
-                                Check this to create and manage your own events.
-                            </p>
-                        </div>
-                    </div>
-
+                    {/* ... error block ... */}
                     {error && (
                         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-100 dark:border-red-800">
                             {error}
                         </div>
                     )}
 
+                    {/* ... name input ... */}
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-page)] mb-1.5">Full Name</label>
                         <div className="relative">
@@ -104,13 +87,14 @@ const Signup = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all"
                                 placeholder="John Doe"
                                 required
                             />
                         </div>
                     </div>
 
+                    {/* ... email input ... */}
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-page)] mb-1.5">Email Address</label>
                         <div className="relative">
@@ -120,7 +104,7 @@ const Signup = () => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all"
                                 placeholder="name@example.com"
                                 required
                             />
@@ -130,37 +114,52 @@ const Signup = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-[var(--text-page)] mb-1.5">Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                placeholder="••••••"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className="w-full px-4 pr-10 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all"
+                                    placeholder="••••••"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-[var(--text-page)] mb-1.5">Confirm</label>
-                            <input
-                                type="password"
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                placeholder="••••••"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    className="w-full px-4 pr-10 py-2.5 bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all"
+                                    placeholder="••••••"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full text-white font-semibold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2 
-                            ${isOrganizer
-                                ? 'bg-purple-600 hover:bg-purple-700 hover:shadow-purple-500/30'
-                                : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30'}`}
+                        className="w-full bg-[#FFDA8A] hover:bg-[#ffc107] text-gray-900 font-semibold py-3 rounded-xl transition-all shadow-lg shadow-[#FFDA8A]/30 flex items-center justify-center gap-2 mt-2"
                     >
                         {loading ? (
                             <Loader2 className="animate-spin" size={20} />
@@ -175,7 +174,7 @@ const Signup = () => {
                     <div className="text-center pt-2">
                         <p className="text-sm text-[var(--text-muted)]">
                             Already have an account?{' '}
-                            <Link to="/login" className={`font-semibold hover:underline ${isOrganizer ? 'text-purple-600 hover:text-purple-700' : 'text-blue-600 hover:text-blue-700'}`}>
+                            <Link to="/login" className="font-semibold text-[#FFDA8A] hover:underline">
                                 Sign In
                             </Link>
                         </p>
