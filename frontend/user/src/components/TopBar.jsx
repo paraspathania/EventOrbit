@@ -42,6 +42,7 @@ const TopBar = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchRef = React.useRef(null);
+    const profileRef = React.useRef(null);
 
     const handleSearchCheck = async (e) => {
         const query = e.target.value;
@@ -67,6 +68,9 @@ const TopBar = () => {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowSuggestions(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setIsProfileOpen(false);
             }
         };
 
@@ -117,7 +121,7 @@ const TopBar = () => {
                 <div className="flex items-center gap-2 min-w-fit">
                     <Link to="/" className="text-2xl font-bold text-[#FFDA8A] flex items-center gap-2">
                         <Ticket className="fill-[#FFDA8A] text-[#FFDA8A]" />
-                        <span className="hidden sm:block text-gray-800">EventOrbit</span>
+                        <span className="hidden sm:block text-gray-800 dark:text-white">EventOrbit</span>
                     </Link>
                 </div>
 
@@ -257,43 +261,61 @@ const TopBar = () => {
                     </div>
 
                     {/* User Profile Dropdown */}
-                    <div className="relative">
+                    <div ref={profileRef} className="relative">
                         <button
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
-                            className="flex items-center gap-2 pl-2 pr-2 sm:pr-4 py-1.5 rounded-full hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
+                            className="flex items-center gap-2 pl-2 pr-2 sm:pr-4 py-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-100 dark:hover:border-slate-700 transition-all"
                         >
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-[#FFDA8A] to-[#ffc107] rounded-full flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white text-gray-800">
-                                {user?.name?.charAt(0) || 'U'}
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-[#FFDA8A] to-[#ffc107] rounded-full flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white dark:ring-slate-700 text-gray-800">
+                                {user ? (user.fullName?.charAt(0) || user.name?.charAt(0) || 'U') : <User size={18} />}
                             </div>
                             <div className="text-left hidden md:block">
-                                <p className="text-sm font-bold text-gray-700 leading-none">{user?.name || 'Guest'}</p>
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-none">
+                                    {user ? (user.fullName || user.name) : 'Guest'}
+                                </p>
                             </div>
                             <ChevronDown size={16} className={`hidden sm:block text-gray-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isProfileOpen && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)}></div>
-                                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-800">
-                                        <p className="text-sm font-bold text-[var(--text-page)]">Signed in as</p>
-                                        <p className="text-sm text-[var(--text-muted)] truncate">{user?.email || 'guest@example.com'}</p>
-                                    </div>
-                                    <div className="p-1">
-                                        <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                                            <User size={16} /> Your Profile
-                                        </Link>
-                                        <Link to="/wallet" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                                            <Settings size={16} /> Settings
-                                        </Link>
-                                    </div>
-                                    <div className="p-1 border-t border-gray-50 dark:border-slate-800">
-                                        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left">
-                                            <LogOut size={16} /> Sign out
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                                {user ? (
+                                    <>
+                                        <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-800">
+                                            <p className="text-sm font-bold text-[var(--text-page)]">Signed in as</p>
+                                            <p className="text-sm text-[var(--text-muted)] truncate">{user.email}</p>
+                                        </div>
+                                        <div className="p-1">
+                                            <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                                                <User size={16} /> Your Profile
+                                            </Link>
+                                            <Link to="/wallet" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                                                <Settings size={16} /> Settings
+                                            </Link>
+                                        </div>
+                                        <div className="p-1 border-t border-gray-50 dark:border-slate-800">
+                                            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left">
+                                                <LogOut size={16} /> Sign out
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-800">
+                                            <p className="text-sm font-bold text-[var(--text-page)]">Welcome, Guest!</p>
+                                            <p className="text-xs text-[var(--text-muted)]">Join us to book tickets.</p>
+                                        </div>
+                                        <div className="p-1">
+                                            <Link to="/login" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                                                <User size={16} /> Sign In
+                                            </Link>
+                                            <Link to="/signup" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                                                <User size={16} /> Create Account
+                                            </Link>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         )}
                     </div>
 

@@ -38,7 +38,14 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (name, email, password, role) => {
         try {
-            const userData = await signupUser(name, email, password, role);
+            // Fix: Construct object expected by authApi AND map 'name' to 'fullName' for backend
+            const payload = {
+                fullName: name,
+                email,
+                password,
+                role
+            };
+            const userData = await signupUser(payload);
             setUser(userData);
             localStorage.setItem('eventorbit_user', JSON.stringify(userData));
             return { success: true };

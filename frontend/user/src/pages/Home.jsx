@@ -59,6 +59,9 @@ const Home = () => {
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFDA8A] to-[#ffc107] text-gray-900 shadow-xl p-8 md:p-12">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative z-10 max-w-2xl">
+          <span className="bg-white/30 backdrop-blur-sm text-gray-900 px-3 py-1 rounded-full text-xs font-bold mb-4 inline-block border border-white/20">
+            Open for Everyone 🌍
+          </span>
           <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
             Discover Unforgettable Experiences
           </h1>

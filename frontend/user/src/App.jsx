@@ -35,6 +35,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route element={<Layout><Home /></Layout>} path="/" />
 
             {/* Protected Routes */}
             <Route element={
@@ -42,7 +43,6 @@ function App() {
                 <AppLayout />
               </ProtectedRoute>
             }>
-              <Route path="/" element={<Home />} />
               <Route path="/event/:id" element={<EventDetails />} />
               <Route path="/event/:id/seats" element={<SeatSelection />} />
               <Route path="/checkout" element={<Checkout />} />
