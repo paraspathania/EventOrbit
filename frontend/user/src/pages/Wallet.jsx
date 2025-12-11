@@ -1,13 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, History, Wallet as WalletIcon, X, CheckCircle, ArrowUpRight, ArrowDownLeft, CreditCard } from 'lucide-react';
+import { Plus, History, Wallet as WalletIcon, X, CheckCircle, ArrowUpRight, ArrowDownLeft, CreditCard, Download, Filter, Calendar } from 'lucide-react';
 
 const Wallet = () => {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
+
+    // Statement Modal State
+    const [showStatementModal, setShowStatementModal] = useState(false);
+    const [filterType, setFilterType] = useState('all'); // all, credit, debit
+    const [dateRange, setDateRange] = useState('all'); // all, month, week
+
     const [addAmount, setAddAmount] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [generatingPdf, setGeneratingPdf] = useState(false);
 
     // Initialize Wallet from LocalStorage
     useEffect(() => {
@@ -62,6 +69,71 @@ const Wallet = () => {
         }, 2000);
     };
 
+    // Filter Logic
+    const getFilteredTransactions = () => {
+        return transactions.filter(tx => {
+            // Type Filter
+            if (filterType === 'credit' && !tx.isCredit) return false;
+            if (filterType === 'debit' && tx.isCredit) return false;
+
+            // Date Filter (Simple implementation)
+            const txDate = new Date(tx.date);
+            const now = new Date();
+            if (dateRange === 'month') {
+                if (txDate.getMonth() !== now.getMonth() || txDate.getFullYear() !== now.getFullYear()) return false;
+            }
+            // Add more date logic if needed
+            return true;
+        });
+    };
+
+    const generatePDF = async () => {
+        setGeneratingPdf(true);
+        try {
+            // Dynamically import jsPDF only when needed to verify if imports are crashing the page
+            const { jsPDF } = await import('jspdf');
+            await import('jspdf-autotable');
+
+            const doc = new jsPDF();
+            const filteredTx = getFilteredTransactions();
+
+            doc.setFontSize(20);
+            doc.text("Wallet Statement", 14, 22);
+            doc.setFontSize(10);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+            doc.text(`Balance: ₹${balance.toFixed(2)}`, 14, 36);
+
+            const tableColumn = ["Date", "Description", "Type", "Amount", "Status"];
+            const tableRows = [];
+
+            filteredTx.forEach(tx => {
+                const transactionData = [
+                    tx.date,
+                    tx.description,
+                    tx.type,
+                    `${tx.isCredit ? '+' : '-'}₹${Math.abs(tx.amount)}`,
+                    "Success"
+                ];
+                tableRows.push(transactionData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [255, 218, 138], textColor: [0, 0, 0] }, // Gold Theme Headers
+            });
+
+            doc.save(`EventOrbit_Statement_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error("PDF Generation failed", error);
+            alert("Failed to generate PDF. Please try again.");
+        } finally {
+            setGeneratingPdf(false);
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-5xl animate-in fade-in duration-500">
             <h2 className="text-3xl font-bold text-[var(--text-page)] mb-6 flex items-center gap-3">
@@ -88,7 +160,10 @@ const Wallet = () => {
                                     <Plus size={20} />
                                     Add Money
                                 </button>
-                                <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-semibold transition-colors backdrop-blur-sm">
+                                <button
+                                    onClick={() => setShowStatementModal(true)}
+                                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-semibold transition-colors backdrop-blur-sm"
+                                >
                                     <History size={20} />
                                     Statements
                                 </button>
@@ -197,6 +272,78 @@ const Wallet = () => {
                                     <p className="text-[var(--text-muted)]">Please do not close this window.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Statement Modal */}
+            {showStatementModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="bg-[#FFDA8A] p-6 flex justify-between items-center text-gray-900">
+                            <h3 className="text-xl font-bold flex items-center gap-2"><History size={24} /> Transaction History</h3>
+                            <button onClick={() => setShowStatementModal(false)} className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Actions / Filters */}
+                            <div className="flex flex-wrap gap-4 mb-6 justify-between items-center">
+                                <div className="flex gap-2">
+                                    <select
+                                        value={filterType}
+                                        onChange={(e) => setFilterType(e.target.value)}
+                                        className="px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-page)] text-sm focus:outline-none"
+                                    >
+                                        <option value="all">All Types</option>
+                                        <option value="credit">Credits (+)</option>
+                                        <option value="debit">Debits (-)</option>
+                                    </select>
+                                    <select
+                                        value={dateRange}
+                                        onChange={(e) => setDateRange(e.target.value)}
+                                        className="px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-page)] text-sm focus:outline-none"
+                                    >
+                                        <option value="all">All Time</option>
+                                        <option value="month">This Month</option>
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={generatePDF}
+                                    className="flex items-center gap-2 bg-gray-900 dark:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all shadow-md"
+                                >
+                                    <Download size={16} /> Download PDF
+                                </button>
+                            </div>
+
+                            {/* List */}
+                            <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                {getFilteredTransactions().length > 0 ? (
+                                    getFilteredTransactions().map(tx => (
+                                        <div key={tx.id} className="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-[var(--border-color)] flex justify-between items-center">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`p-2 rounded-lg ${tx.isCredit ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                    {tx.isCredit ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-[var(--text-page)] text-sm">{tx.description}</p>
+                                                    <p className="text-xs text-[var(--text-muted)]">{tx.date} • {tx.type}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`font-bold ${tx.isCredit ? 'text-green-600' : 'text-red-500'}`}>
+                                                {tx.isCredit ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString('en-IN')}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-12 text-[var(--text-muted)]">
+                                        <Filter size={24} className="mx-auto mb-2 opacity-30" />
+                                        <p>No transactions found matching filters.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
