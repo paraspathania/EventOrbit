@@ -35,7 +35,7 @@ export const fetchCategories = async () => {
 export const searchEvents = async (query) => {
   try {
     const response = await apiClient.get(`/events?search=${query}`);
-    return response.data;
+    return response.data.events || [];
   } catch (error) {
     return [];
   }

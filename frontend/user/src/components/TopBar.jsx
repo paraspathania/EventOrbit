@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Bell, User, LogOut, Settings, ChevronDown, Moon, Sun, LayoutDashboard, Ticket, Wallet, Star, Menu, X } from 'lucide-react';
+import { Search, Filter, Bell, User, LogOut, ChevronDown, Moon, Sun, LayoutDashboard, Ticket, Wallet, Star, Menu, X } from 'lucide-react';
 import { Link, useNavigate, NavLink, useLocation, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -49,9 +49,18 @@ const TopBar = () => {
         setSearchQuery(query);
 
         if (query.trim()) {
-            const results = await searchEvents(query);
-            setSuggestions(results.slice(0, 5));
-            setShowSuggestions(true);
+            try {
+                const results = await searchEvents(query);
+                if (Array.isArray(results)) {
+                    setSuggestions(results.slice(0, 5));
+                    setShowSuggestions(true);
+                } else {
+                    setSuggestions([]);
+                }
+            } catch (error) {
+                console.error("Search error:", error);
+                setSuggestions([]);
+            }
         } else {
             setSuggestions([]);
             setShowSuggestions(false);
@@ -289,9 +298,7 @@ const TopBar = () => {
                                             <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
                                                 <User size={16} /> Your Profile
                                             </Link>
-                                            <Link to="/wallet" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                                                <Settings size={16} /> Settings
-                                            </Link>
+
                                         </div>
                                         <div className="p-1 border-t border-gray-50 dark:border-slate-800">
                                             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left">
