@@ -12,6 +12,9 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Cleanup legacy keys if any
+        localStorage.removeItem('user');
+
         // Check local storage for persisted user on mount
         const storedUser = localStorage.getItem('eventorbit_user');
         if (storedUser) {

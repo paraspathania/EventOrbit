@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { changePassword } from '../api/authApi';
 import { User, Mail, Phone, MapPin, Camera, Save, Lock, Shield, Loader2, X, ZoomIn, ZoomOut, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/canvasUtils';
@@ -126,25 +127,30 @@ const Profile = () => {
         }
 
         setPasswordLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            await changePassword(passwordData.currentPassword, passwordData.newPassword);
 
-        setPasswordLoading(false);
-        setPasswordSuccess('Password changed successfully!');
+            setPasswordSuccess('Password changed successfully!');
 
-        // Update last changed date
-        const newDate = 'Just now';
-        setLastPasswordChange(newDate);
-        localStorage.setItem('password_last_changed', new Date().toLocaleDateString());
+            // Update last changed date
+            const newDate = 'Just now';
+            setLastPasswordChange(newDate);
+            localStorage.setItem('password_last_changed', new Date().toLocaleDateString());
 
-        // Reset form and close modal after delay
-        setTimeout(() => {
-            setIsPasswordModalOpen(false);
-            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            setPasswordSuccess('');
-            // After modal closes, show actual date or keep 'Just now' until refresh
-            setLastPasswordChange('Just now');
-        }, 1500);
+            // Reset form and close modal after delay
+            setTimeout(() => {
+                setIsPasswordModalOpen(false);
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setPasswordSuccess('');
+                // After modal closes, show actual date or keep 'Just now' until refresh
+                setLastPasswordChange('Just now');
+            }, 1500);
+
+        } catch (error) {
+            setPasswordError(error.message);
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {

@@ -66,3 +66,22 @@ export const loginUser = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const updatePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (user && (await bcrypt.compare(currentPassword, user.password))) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+            await user.save();
+
+            res.json({ message: "Password updated successfully" });
+        } else {
+            res.status(401).json({ message: "Invalid current password" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
