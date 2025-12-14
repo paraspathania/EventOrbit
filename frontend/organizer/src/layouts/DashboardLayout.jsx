@@ -7,13 +7,9 @@ const DashboardLayout = () => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-page)] font-sans transition-colors">
-            {/* Sidebar (Desktop: Fixed, Mobile: Toggle) */}
-            <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 lg:static`}>
-                <Sidebar />
-            </div>
+        <div className="flex h-screen bg-[var(--bg-page)] text-[var(--text-page)] font-sans overflow-hidden">
 
-            {/* Overlay for mobile sidebar */}
+            {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
@@ -21,12 +17,21 @@ const DashboardLayout = () => {
                 ></div>
             )}
 
+            {/* Sidebar Container (Mobile Drawer Only) */}
+            <div className={`
+                fixed inset-y-0 left-0 z-50 w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] transition-transform duration-300
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                lg:hidden
+            `}>
+                <Sidebar />
+            </div>
+
             {/* Main Content Area */}
-            <div className="lg:pl-64 flex flex-col min-h-screen transition-all duration-300">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <TopBar toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
 
-                <main className="flex-1 pt-24 p-6 lg:p-8">
-                    <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
+                    <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-10">
                         <Outlet />
                     </div>
                 </main>

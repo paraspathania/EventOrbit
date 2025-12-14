@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Calendar, BarChart3, Settings, LogOut, Ticket } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Activity, Users, DollarSign, UserCheck, LogOut, Ticket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
@@ -9,13 +9,14 @@ const Sidebar = () => {
     const navItems = [
         { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/create-event', label: 'Create Event', icon: <CalendarPlus size={20} /> },
-        { path: '/my-events', label: 'My Events', icon: <Calendar size={20} /> },
-        { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
-        { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+        { path: '/live-monitor', label: 'Live Monitor', icon: <Activity size={20} /> },
+        { path: '/attendees', label: 'Attendees', icon: <Users size={20} /> },
+        { path: '/revenue', label: 'Revenue', icon: <DollarSign size={20} /> },
+        { path: '/profile', label: 'Profile (KYC)', icon: <UserCheck size={20} /> },
     ];
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col z-40 transition-colors">
+        <aside className="h-full flex flex-col bg-[var(--bg-sidebar)] transition-colors">
             {/* Logo */}
             <div className="h-20 flex items-center px-6 border-b border-[var(--border-color)]">
                 <div className="flex items-center gap-2 font-bold text-2xl text-[var(--text-page)]">
