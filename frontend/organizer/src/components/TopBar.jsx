@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Bell, Search, User, Sun, Moon, Menu, LayoutDashboard, CalendarPlus, Activity, Users, DollarSign, UserCheck, Ticket, LogOut } from 'lucide-react';
+import { Bell, Search, User, Sun, Moon, Menu, LayoutDashboard, CalendarPlus, Activity, Users, IndianRupee, UserCheck, Ticket, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,7 +14,7 @@ const TopBar = ({ toggleSidebar }) => {
         { path: '/create-event', label: 'Create Event', icon: <CalendarPlus size={18} /> },
         { path: '/live-monitor', label: 'Live', icon: <Activity size={18} /> },
         { path: '/attendees', label: 'Attendees', icon: <Users size={18} /> },
-        { path: '/revenue', label: 'Revenue', icon: <DollarSign size={18} /> },
+        { path: '/revenue', label: 'Revenue', icon: <IndianRupee size={18} /> },
         { path: '/profile', label: 'KYC', icon: <UserCheck size={18} /> },
     ];
 

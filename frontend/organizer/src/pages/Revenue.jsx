@@ -1,16 +1,43 @@
-import React from 'react';
-import { DollarSign, TrendingUp, CreditCard, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, CreditCard, Download, Clock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Revenue = () => {
-    const data = [
-        { name: 'Mon', revenue: 4000 },
-        { name: 'Tue', revenue: 3000 },
-        { name: 'Wed', revenue: 2000 },
-        { name: 'Thu', revenue: 2780 },
-        { name: 'Fri', revenue: 1890 },
-        { name: 'Sat', revenue: 2390 },
-        { name: 'Sun', revenue: 3490 },
+    const [stats, setStats] = useState({
+        chartData: [],
+        totalRevenue: 0,
+        pendingPayouts: 0,
+        avgTicketPrice: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRevenue = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/organizer/revenue');
+                const data = await res.json();
+                if (data.success) {
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error("Error fetching revenue stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRevenue();
+    }, []);
+
+    // Placeholder data for chart if empty
+    const chartData = stats.chartData.length > 0 ? stats.chartData : [
+        { name: 'Mon', revenue: 0 },
+        { name: 'Tue', revenue: 0 },
+        { name: 'Wed', revenue: 0 },
+        { name: 'Thu', revenue: 0 },
+        { name: 'Fri', revenue: 0 },
+        { name: 'Sat', revenue: 0 },
+        { name: 'Sun', revenue: 0 },
     ];
 
     return (
@@ -29,7 +56,7 @@ const Revenue = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl p-6 text-white shadow-lg">
                     <p className="text-emerald-100 text-sm font-medium mb-1">Total Revenue</p>
-                    <h3 className="text-3xl font-bold mb-2">$45,231.00</h3>
+                    <h3 className="text-3xl font-bold mb-2">₹{stats.totalRevenue.toLocaleString()}</h3>
                     <div className="flex items-center gap-2 text-sm text-emerald-100 bg-white/20 w-fit px-2 py-1 rounded-lg backdrop-blur-sm">
                         <TrendingUp size={16} /> +12% from last month
                     </div>
@@ -39,7 +66,7 @@ const Revenue = () => {
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <p className="text-[var(--text-muted)] text-sm font-medium">Pending Payouts</p>
-                            <h3 className="text-2xl font-bold text-[var(--text-page)]">$12,450.00</h3>
+                            <h3 className="text-2xl font-bold text-[var(--text-page)]">₹{stats.pendingPayouts.toLocaleString()}</h3>
                         </div>
                         <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
                             <ClockIcon size={20} />
@@ -52,13 +79,13 @@ const Revenue = () => {
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <p className="text-[var(--text-muted)] text-sm font-medium">Avg. Ticket Price</p>
-                            <h3 className="text-2xl font-bold text-[var(--text-page)]">$48.50</h3>
+                            <h3 className="text-2xl font-bold text-[var(--text-page)]">₹{stats.avgTicketPrice.toLocaleString()}</h3>
                         </div>
                         <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                             <CreditCard size={20} />
                         </div>
                     </div>
-                    <p className="text-xs text-[var(--text-muted)]">Based on 1,234 sales</p>
+                    <p className="text-xs text-[var(--text-muted)]">Based on actual sales</p>
                 </div>
             </div>
 
@@ -66,7 +93,7 @@ const Revenue = () => {
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 h-[400px]">
                 <h3 className="text-lg font-bold text-[var(--text-page)] mb-6">Revenue Trend (7 Days)</h3>
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data}>
+                    <AreaChart data={chartData}>
                         <defs>
                             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -75,7 +102,7 @@ const Revenue = () => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)' }} tickFormatter={(value) => `$${value}`} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)' }} tickFormatter={(value) => `₹${value} `} />
                         <Tooltip
                             contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-page)' }}
                             itemStyle={{ color: 'var(--text-page)' }}

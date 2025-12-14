@@ -4,9 +4,46 @@ import { Calendar, Clock, MapPin, Ticket, ChevronDown, Check } from 'lucide-reac
 const CreateEvent = () => {
     // Mock Venue Data for "Venue-Driven Ticket System"
     const venues = [
-        { id: 1, name: "Grand Theater (New York)", capacity: 2500, location: "New York, USA" },
-        { id: 2, name: "Cyber Arena (Neo Tokyo)", capacity: 5000, location: "Tokyo, Japan" },
-        { id: 3, name: "Sunset Pavilion", capacity: 800, location: "Los Angeles, USA" }
+        // Delhi NCR
+        { id: 101, name: "Bharat Mandapam (Pragati Maidan)", capacity: 7000, location: "New Delhi" },
+        { id: 102, name: "Jawaharlal Nehru Stadium", capacity: 60000, location: "New Delhi" },
+        { id: 103, name: "Indira Gandhi Arena", capacity: 14000, location: "New Delhi" },
+        { id: 104, name: "Buddh International Circuit", capacity: 100000, location: "Greater Noida" },
+
+        // Mumbai
+        { id: 201, name: "Jio World Centre", capacity: 2000, location: "Mumbai" },
+        { id: 202, name: "Wankhede Stadium", capacity: 33000, location: "Mumbai" },
+        { id: 203, name: "DY Patil Stadium", capacity: 55000, location: "Navi Mumbai" },
+        { id: 204, name: "Nita Mukesh Ambani Cultural Centre", capacity: 2000, location: "Mumbai" },
+        { id: 205, name: "The Dome, NSCI", capacity: 5000, location: "Mumbai" },
+
+        // Bangalore
+        { id: 301, name: "M. Chinnaswamy Stadium", capacity: 40000, location: "Bangalore" },
+        { id: 302, name: "Bangalore Palace Grounds", capacity: 30000, location: "Bangalore" },
+        { id: 303, name: "KTPO Trade Center", capacity: 5000, location: "Bangalore" },
+
+        // Hyderabad
+        { id: 401, name: "Rajiv Gandhi International Cricket Stadium", capacity: 55000, location: "Hyderabad" },
+        { id: 402, name: "HITEX Exhibition Center", capacity: 4000, location: "Hyderabad" },
+        { id: 403, name: "Gachibowli Indoor Stadium", capacity: 5000, location: "Hyderabad" },
+
+        // Chennai
+        { id: 501, name: "M. A. Chidambaram Stadium", capacity: 50000, location: "Chennai" },
+        { id: 502, name: "Chennai Trade Centre", capacity: 6000, location: "Chennai" },
+
+        // Kolkata
+        { id: 601, name: "Eden Gardens", capacity: 68000, location: "Kolkata" },
+        { id: 602, name: "Salt Lake Stadium", capacity: 85000, location: "Kolkata" },
+        { id: 603, name: "Biswa Bangla Convention Centre", capacity: 3200, location: "Kolkata" },
+
+        // Ahmedabad
+        { id: 701, name: "Narendra Modi Stadium", capacity: 132000, location: "Ahmedabad" },
+
+        // Pune
+        { id: 801, name: "MCA Stadium", capacity: 37000, location: "Pune" },
+
+        // Jaipur
+        { id: 901, name: "Sawai Mansingh Stadium", capacity: 30000, location: "Jaipur" }
     ];
 
     const [eventData, setEventData] = useState({
@@ -24,6 +61,61 @@ const CreateEvent = () => {
         const venue = venues.find(v => v.id === venueId);
         setSelectedVenue(venue);
         setEventData({ ...eventData, venueId });
+    };
+
+    const [loading, setLoading] = useState(false);
+
+    const handlePublish = async () => {
+        if (!selectedVenue || !eventData.title || !eventData.date || !eventData.time) {
+            alert("Please fill in all required fields and select a venue.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const payload = {
+                title: eventData.title,
+                category: eventData.category,
+                date: new Date(`${eventData.date}T${eventData.time}`), // Combine date & time
+                venue: selectedVenue.name,
+                description: "Event description placeholder", // Add a description field to form if needed
+                banner: "https://via.placeholder.com/800x400", // Placeholder image
+                seatMap: { General: selectedVenue.capacity },
+                price: { General: 50 }, // Default price for now
+            };
+
+            const response = await fetch('http://localhost:5000/api/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${token}` // Add token when Auth is real
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("Event Created Successfully! Check Dashboard.");
+                // Reset form or redirect
+                setEventData({
+                    title: '',
+                    category: 'Concert',
+                    date: '',
+                    time: '',
+                    venueId: '',
+                });
+                setSelectedVenue(null);
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+
+        } catch (error) {
+            console.error("Error creating event:", error);
+            alert("Failed to connect to server.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -88,6 +180,16 @@ const CreateEvent = () => {
                             <Clock className="absolute right-4 top-2.5 text-gray-400 pointer-events-none" size={18} />
                         </div>
                     </div>
+                    <div className="col-span-2 space-y-1">
+                        <label className="text-xs font-medium text-[var(--text-muted)]">Description (Optional)</label>
+                        <textarea
+                            className="w-full bg-[var(--bg-page)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-[var(--text-page)] focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
+                            rows="2"
+                            placeholder="Brief description..."
+                            value={eventData.description || ''}
+                            onChange={(e) => setEventData({ ...eventData, description: e.target.value })}
+                        ></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -132,11 +234,19 @@ const CreateEvent = () => {
 
             {/* Actions */}
             <div className="flex justify-end gap-4 pt-4">
-                <button className="px-6 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] font-medium hover:bg-[var(--bg-subtle)] transition-colors">
+                <button
+                    className="px-6 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] font-medium hover:bg-[var(--bg-subtle)] transition-colors"
+                    disabled={loading}
+                >
                     Save Draft
                 </button>
-                <button className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-lg shadow-purple-500/20 transition-all">
-                    Submit for Approval
+                <button
+                    onClick={handlePublish}
+                    disabled={loading}
+                    className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
+                >
+                    {loading ? 'Publishing...' : 'Submit for Approval'}
+                    {!loading && <Check size={18} />}
                 </button>
             </div>
         </div>

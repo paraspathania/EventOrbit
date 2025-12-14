@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, DollarSign, Clock, Ticket } from 'lucide-react';
 
 const StatCard = ({ title, value, change, icon: Icon, color }) => (
@@ -20,6 +20,32 @@ const StatCard = ({ title, value, change, icon: Icon, color }) => (
 );
 
 const Dashboard = () => {
+    const [stats, setStats] = useState({
+        totalSales: 0,
+        ticketsSold: 0,
+        eventsActive: 0,
+        pendingApproval: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/organizer/stats');
+                const data = await res.json();
+                if (data.success) {
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     return (
         <div className="space-y-6">
             <div>
@@ -30,28 +56,28 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Total Sales"
-                    value="$15,400"
+                    value={`₹${stats.totalSales.toLocaleString()}`}
                     change="+20.1%"
                     icon={DollarSign}
                     color="bg-gradient-to-br from-green-400 to-emerald-600"
                 />
                 <StatCard
                     title="Tickets Sold"
-                    value="320"
+                    value={stats.ticketsSold}
                     change="+12.5%"
                     icon={Ticket}
                     color="bg-gradient-to-br from-blue-400 to-indigo-600"
                 />
                 <StatCard
                     title="Events Active"
-                    value="1"
+                    value={stats.eventsActive}
                     change="Active"
                     icon={Calendar}
                     color="bg-gradient-to-br from-purple-400 to-pink-600"
                 />
                 <StatCard
                     title="Pending Approval"
-                    value="1"
+                    value={stats.pendingApproval}
                     change="Waiting"
                     icon={Clock}
                     color="bg-gradient-to-br from-yellow-400 to-orange-500"
@@ -64,7 +90,7 @@ const Dashboard = () => {
                     <h3 className="font-bold text-[var(--text-page)]">Recent Activity</h3>
                 </div>
                 <div className="p-6 text-[var(--text-muted)] text-center text-sm">
-                    No recent notifications.
+                    {loading ? 'Loading stats...' : 'No recent notifications.'}
                 </div>
             </div>
         </div>
