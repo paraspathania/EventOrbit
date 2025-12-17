@@ -153,3 +153,43 @@ export const updateOrganizerProfile = async (req, res) => {
         res.status(500).json({ message: "Server Error updating profile" });
     }
 };
+
+// @desc    Upload KYC Document
+// @route   POST /api/organizer/kyc
+// @access  Private
+export const uploadKyc = async (req, res) => {
+    try {
+        const userId = req.user ? req.user._id : "6753457a1234567890abcdef";
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        // Add document to user record
+        const newDoc = {
+            docType: req.body.docType || 'unknown',
+            filePath: req.file.path,
+            originalName: req.file.originalname
+        };
+
+        user.kycDocuments.push(newDoc);
+        user.kycStatus = 'pending'; // Auto-set to pending on upload
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Document uploaded successfully",
+            kycStatus: user.kycStatus,
+            document: newDoc
+        });
+
+    } catch (error) {
+        console.error("KYC Upload Error:", error);
+        res.status(500).json({ message: "Server Error uploading document" });
+    }
+};
