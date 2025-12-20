@@ -17,7 +17,7 @@ import { Server } from "socket.io"; // Import socket.io
 const httpServer = createServer(app); // Wrap express app
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174"], // User & Organizer Ports
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], // User, Organizer & Admin Ports
     methods: ["GET", "POST"]
   }
 });
@@ -35,7 +35,7 @@ const MONGO_URI = process.env.MONGO_URI;
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
   credentials: true // Important for cookies
 }));
 

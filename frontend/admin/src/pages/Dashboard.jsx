@@ -49,7 +49,6 @@ const Dashboard = () => {
             value: `₹${stats.totalRevenue.toLocaleString()}`,
             icon: IndianRupee,
             color: 'bg-green-500',
-            onClick: () => navigate('/revenue')
         },
         { title: 'Total Events', value: stats.totalEvents, icon: Calendar, color: 'bg-yellow-500' },
         { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-blue-500' },
