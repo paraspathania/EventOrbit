@@ -1,78 +1,118 @@
 import Event from "../models/event_model.js";
+import Review from "../models/review_model.js";
 
 // @desc    Get all events
 // @route   GET /api/events
 // @access  Public
 export const getAllEvents = async (req, res) => {
-  try {
-    const keyword = req.query.search
-      ? {
-        $or: [
-          { title: { $regex: req.query.search, $options: "i" } },
-          { description: { $regex: req.query.search, $options: "i" } },
-          { category: { $regex: req.query.search, $options: "i" } },
-          { location: { $regex: req.query.search, $options: "i" } },
-        ],
-      }
-      : {};
+    try {
+        const { category } = req.query;
+        let filter = {};
 
-    const events = await Event.find({ ...keyword, status: "approved" })
-      .populate("organizer", "fullName");
+        if (category && category !== 'all') {
+            filter.category = category;
+        }
 
-    res.status(200).json({
-      success: true,
-      count: events.length,
-      events,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Server Error" });
-  }
+        const events = await Event.find(filter).populate('organizer', 'fullName');
+        res.json({ success: true, events });
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
 };
 
 // @desc    Create a new event
 // @route   POST /api/events
-// @access  Private (Organizer)
+// @access  Public
 export const createEvent = async (req, res) => {
-  try {
-    const {
-      title,
-      venue,
-      date,
-      category,
-      description,
-      banner,
-      price,
-      seatMap
-    } = req.body;
+    try {
+        const { title, venue, date, category, description, banner, seatMap, price } = req.body;
 
-    // Basic Validation
-    if (!title || !description || !date || !venue) {
-      return res.status(400).json({ success: false, message: "Please provide all required fields" });
+        // Calculate VIP Allocation (10%)
+        let processedSeatMap = seatMap;
+        if (seatMap && seatMap.General) {
+            const totalCapacity = parseInt(seatMap.General);
+            const vipCapacity = Math.ceil(totalCapacity * 0.10);
+            const regularCapacity = totalCapacity - vipCapacity;
+            processedSeatMap = {
+                VIP: vipCapacity,
+                Regular: regularCapacity,
+                Total: totalCapacity
+            };
+        }
+
+        const newEvent = new Event({
+            title,
+            venue,
+            date,
+            category,
+            description,
+            banner: req.file ? req.file.path : banner, // Use uploaded Cloudinary URL
+            seatMap: processedSeatMap,
+            price,
+            organizer: req.user ? req.user._id : "6753457a1234567890abcdef" // Default/Mock ID until auth is enabled
+        });
+
+        const savedEvent = await newEvent.save();
+        res.status(201).json({ success: true, event: savedEvent });
+
+    } catch (error) {
+        console.error("Error creating event:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
     }
+};
+// @desc    Add a Review
+// @route   POST /api/events/:id/reviews
+// @access  Private
+export const addReview = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: "Not authorized" });
+        }
 
-    const event = new Event({
-      title,
-      organizer: req.user ? req.user._id : "6753457a1234567890abcdef", // Fallback to dummy ID if no auth
-      venue,
-      date,
-      category,
-      description,
-      banner, // Assuming URL for now
-      price,
-      seatMap,
-      status: "approved" // Defaulting to approved for now to simplify flow
-    });
+        const { rating, comment } = req.body;
+        const eventId = req.params.id;
 
-    const createdEvent = await event.save();
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
 
-    res.status(201).json({
-      success: true,
-      event: createdEvent
-    });
+        // Check if event has ended
+        if (new Date(event.date) > new Date()) {
+            return res.status(400).json({ success: false, message: "You can only review events that have ended." });
+        }
 
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Server Error creating event" });
-  }
+        const review = await Review.create({
+            user: req.user._id,
+            event: eventId,
+            rating,
+            comment
+        });
+
+        res.status(201).json({ success: true, review });
+
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: "You have already reviewed this event" });
+        }
+        console.error("Error adding review:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+// @desc    Get Reviews for an Event
+// @route   GET /api/events/:id/reviews
+// @access  Public
+export const getEventReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find({ event: req.params.id })
+            .populate('user', 'fullName')
+            .sort({ createdAt: -1 });
+
+        res.json({ success: true, reviews });
+    } catch (error) {
+        console.error("Error fetching reviews:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
 };

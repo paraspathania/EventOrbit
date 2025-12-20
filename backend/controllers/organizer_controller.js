@@ -7,32 +7,36 @@ import Booking from "../models/booking_model.js";
 // @access  Private
 export const getDashboardStats = async (req, res) => {
     try {
-        const userId = req.user ? req.user._id : "6753457a1234567890abcdef"; // Fallback for dev
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
 
         // 1. Total Sales (from Bookings)
-        // Find all events by this organizer
         const events = await Event.find({ organizer: userId });
         const eventIds = events.map(e => e._id);
 
-        // Calculate total revenue from bookings for these events
-        const bookings = await Booking.find({ event: { $in: eventIds }, status: 'confirmed' });
-        const totalSales = bookings.reduce((acc, curr) => acc + (curr.amountPaid || 0), 0);
+        // 1. Total Sales & Tickets Sold
+        // Fetch ALL bookings for these events to calculate various stats
+        const allBookings = await Booking.find({ event: { $in: eventIds } });
 
-        // 2. Tickets Sold
-        const ticketsSold = bookings.length;
+        // Filter for confirmed/checked_in for revenue and sales count
+        const confirmedBookings = allBookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in');
+        const totalSales = confirmedBookings.reduce((acc, curr) => acc + (curr.amountPaid || 0), 0);
+        const ticketsSold = confirmedBookings.length;
 
-        // 3. Events Active
+        // 2. Events Active
         const eventsActive = events.length;
 
-        // 4. Pending Approval (Mock logic for now, or check status='pending')
-        const pendingApproval = await Event.countDocuments({ organizer: userId, status: 'pending' });
+        // 3. Pending Approval (Tickets needing action)
+        const pendingBookings = allBookings.filter(b => b.status === 'pending').length;
 
         res.json({
             success: true,
             totalSales,
             ticketsSold,
             eventsActive,
-            pendingApproval
+            pendingApproval: pendingBookings
         });
 
     } catch (error) {
@@ -46,25 +50,34 @@ export const getDashboardStats = async (req, res) => {
 // @access  Private
 export const getRevenueAnalytics = async (req, res) => {
     try {
-        // Mock data logic for now as aggregation is complex without real data
-        // In real app: Aggregate Booking.amountPaid grouped by createdAt date
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
 
+        // Calculate Real Total Revenue
+        const events = await Event.find({ organizer: userId });
+        const eventIds = events.map(e => e._id);
+        const bookings = await Booking.find({ event: { $in: eventIds }, status: 'confirmed' });
+        const totalRevenue = bookings.reduce((acc, curr) => acc + (curr.amountPaid || 0), 0);
+
+        // Mock Chart Data (Time series logic would go here)
         const data = [
-            { name: 'Mon', revenue: 4000 },
-            { name: 'Tue', revenue: 3000 },
-            { name: 'Wed', revenue: 2000 },
-            { name: 'Thu', revenue: 2780 },
-            { name: 'Fri', revenue: 1890 },
-            { name: 'Sat', revenue: 2390 },
-            { name: 'Sun', revenue: 3490 },
+            { name: 'Mon', revenue: 0 },
+            { name: 'Tue', revenue: 0 },
+            { name: 'Wed', revenue: 0 },
+            { name: 'Thu', revenue: 0 },
+            { name: 'Fri', revenue: 0 },
+            { name: 'Sat', revenue: 0 },
+            { name: 'Sun', revenue: totalRevenue }, // Dump total here for visualization
         ];
 
         res.json({
             success: true,
             chartData: data,
-            totalRevenue: 45231, // Replace with calc
-            pendingPayouts: 12450,
-            avgTicketPrice: 48.50
+            totalRevenue: totalRevenue,
+            pendingPayouts: totalRevenue * 0.9, // 90% payout rule example
+            avgTicketPrice: bookings.length > 0 ? (totalRevenue / bookings.length).toFixed(2) : 0
         });
     } catch (error) {
         res.status(500).json({ message: "Server Error fetching revenue" });
@@ -76,23 +89,36 @@ export const getRevenueAnalytics = async (req, res) => {
 // @access  Private
 export const getAttendees = async (req, res) => {
     try {
-        const userId = req.user ? req.user._id : "6753457a1234567890abcdef";
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
         const events = await Event.find({ organizer: userId });
         const eventIds = events.map(e => e._id);
 
         const bookings = await Booking.find({ event: { $in: eventIds } })
             .populate('user', 'fullName email phone')
             .populate('event', 'title')
-            .limit(50); // Pagination needed in future
+            .sort({ createdAt: -1 });
 
-        const attendees = bookings.map(b => ({
-            id: b._id,
-            name: b.user ? b.user.fullName : 'Guest User',
-            email: b.user ? b.user.email : 'N/A',
-            phone: b.user ? b.user.phone : 'N/A',
-            ticket: b.seatType || 'General',
-            status: b.status === 'confirmed' ? 'Checked In' : b.status // Mapping status
-        }));
+        const attendees = bookings.map(b => {
+            let displayStatus = b.status;
+            // Correct mapping priority
+            if (b.status === 'confirmed') displayStatus = 'Confirmed';
+            if (b.status === 'checked_in') displayStatus = 'Checked In';
+            if (b.status === 'pending') displayStatus = 'Pending';
+            if (b.status === 'cancelled') displayStatus = 'Cancelled';
+
+            return {
+                id: b._id,
+                name: b.attendeeName || (b.user ? b.user.fullName : 'Guest User'),
+                email: b.user ? b.user.email : 'N/A',
+                phone: b.user ? b.user.phone : 'N/A',
+                ticket: b.seatType || 'General',
+                seat: b.seatNumber || 'N/A',
+                status: displayStatus
+            };
+        });
 
         res.json({ success: true, attendees });
 
@@ -107,7 +133,10 @@ export const getAttendees = async (req, res) => {
 // @access  Private
 export const getOrganizerProfile = async (req, res) => {
     try {
-        const userId = req.user ? req.user._id : "6753457a1234567890abcdef";
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
         const user = await User.findById(userId).select('-password');
 
         if (user) {
@@ -125,14 +154,32 @@ export const getOrganizerProfile = async (req, res) => {
 // @access  Private
 export const updateOrganizerProfile = async (req, res) => {
     try {
-        const userId = req.user ? req.user._id : "6753457a1234567890abcdef";
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
         const user = await User.findById(userId);
 
         if (user) {
             user.fullName = req.body.fullName || user.fullName;
             user.email = req.body.email || user.email;
             user.phone = req.body.phone || user.phone;
-            // Add other fields like address if schema supports it or use mixin
+
+            // Update Organization Details
+            if (req.body.organizationDetails) {
+                user.organizationDetails = {
+                    ...user.organizationDetails,
+                    ...req.body.organizationDetails
+                };
+            }
+
+            // Update Bank Details
+            if (req.body.bankDetails) {
+                user.bankDetails = {
+                    ...user.bankDetails,
+                    ...req.body.bankDetails
+                };
+            }
 
             const updatedUser = await user.save();
 
@@ -143,53 +190,128 @@ export const updateOrganizerProfile = async (req, res) => {
                     fullName: updatedUser.fullName,
                     email: updatedUser.email,
                     role: updatedUser.role,
-                    phone: updatedUser.phone
+                    phone: updatedUser.phone,
+                    organizationDetails: updatedUser.organizationDetails,
+                    bankDetails: updatedUser.bankDetails,
+                    kycStatus: updatedUser.kycStatus
                 }
             });
         } else {
             res.status(404).json({ message: "User not found" });
         }
     } catch (error) {
-        res.status(500).json({ message: "Server Error updating profile" });
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: error.message || "Server Error updating profile" });
     }
 };
 
-// @desc    Upload KYC Document
-// @route   POST /api/organizer/kyc
+// @desc    Update Booking Status
+// @route   PUT /api/organizer/booking/:id/status
 // @access  Private
-export const uploadKyc = async (req, res) => {
+export const updateBookingStatus = async (req, res) => {
     try {
-        const userId = req.user ? req.user._id : "6753457a1234567890abcdef";
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
         }
 
-        if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" });
+        const { status, reason } = req.body;
+        const booking = await Booking.findById(req.params.id).populate('event');
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
         }
 
-        // Add document to user record
-        const newDoc = {
-            docType: req.body.docType || 'unknown',
-            filePath: req.file.path,
-            originalName: req.file.originalname
-        };
+        // Verify ownership
+        if (booking.event.organizer.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: "Not authorized to update this booking" });
+        }
 
-        user.kycDocuments.push(newDoc);
-        user.kycStatus = 'pending'; // Auto-set to pending on upload
-        await user.save();
+        booking.status = status;
+        if (status === 'cancelled' && reason) {
+            booking.cancellationReason = reason;
+        }
+
+        await booking.save();
+
+        res.json({ success: true, booking });
+
+    } catch (error) {
+        console.error("Error updating booking status", error);
+        res.status(500).json({ message: "Server Error updating booking status" });
+    }
+};
+
+// @desc    Get Live Activity Feed
+// @route   GET /api/organizer/live-activity
+// @access  Private
+export const getLiveActivity = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
+
+        // Find all events by this organizer
+        const events = await Event.find({ organizer: userId });
+        const eventIds = events.map(e => e._id);
+
+        // Find bookings
+        const bookings = await Booking.find({ event: { $in: eventIds } })
+            .sort({ createdAt: -1 })
+            .populate('user', 'fullName email')
+            .populate('event', 'title');
+
+        // Calculate Stats
+        const recentCheckIns = bookings.filter(b => b.status === 'checked_in').length;
+        const ticketsScanned = bookings.length; // Total Tickets
+        const alerts = bookings.filter(b => b.status === 'cancelled').length; // Gate Alerts (Cancelled status)
+
+        const activities = bookings.slice(0, 20).map(b => {
+            let action = 'Ticket Sold';
+            if (b.status === 'checked_in') action = 'Check-in';
+            if (b.status === 'cancelled') action = 'Cancelled';
+
+            return {
+                id: b._id,
+                time: b.createdAt,
+                action: action,
+                user: b.attendeeName || (b.user ? b.user.fullName : 'Guest User'),
+                ticket: `#${b._id.toString().slice(-6).toUpperCase()}`,
+                seatNumber: b.seatNumber,
+                eventName: b.event ? b.event.title : 'Unknown Event',
+                alert: b.status === 'cancelled'
+            };
+        });
 
         res.json({
             success: true,
-            message: "Document uploaded successfully",
-            kycStatus: user.kycStatus,
-            document: newDoc
+            activities,
+            stats: {
+                recentCheckIns,
+                ticketsScanned,
+                alerts
+            }
         });
 
     } catch (error) {
-        console.error("KYC Upload Error:", error);
-        res.status(500).json({ message: "Server Error uploading document" });
+        console.error(error);
+        res.status(500).json({ message: "Server Error fetching live activity" });
+    }
+};
+// @desc    Get All Events for Organizer
+// @route   GET /api/organizer/events
+// @access  Private
+export const getOrganizerEvents = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+        const userId = req.user._id;
+        const events = await Event.find({ organizer: userId }).sort({ date: 1 }); // Sort by date ascending
+
+        res.json({ success: true, events });
+    } catch (error) {
+        console.error("Error fetching organizer events:", error);
+        res.status(500).json({ message: "Server Error fetching events" });
     }
 };

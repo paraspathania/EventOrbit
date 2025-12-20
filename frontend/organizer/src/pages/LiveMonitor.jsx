@@ -1,5 +1,5 @@
-import React from 'react';
-import { Activity, Users, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, Users, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 const MonitorCard = ({ title, value, subtext, icon: Icon, color }) => (
     <div className="bg-[var(--bg-card)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center justify-between">
@@ -14,15 +14,87 @@ const MonitorCard = ({ title, value, subtext, icon: Icon, color }) => (
     </div>
 );
 
+import { io } from 'socket.io-client';
+
 const LiveMonitor = () => {
-    // Mock Live Data
-    const liveFeed = [
-        { time: '10:42 AM', action: 'Check-in', user: 'Sarah Connor', ticket: '#T-800' },
-        { time: '10:41 AM', action: 'Ticket Sold', user: 'Kyle Reese', ticket: '#T-801' },
-        { time: '10:39 AM', action: 'Check-in', user: 'John Doe', ticket: '#T-755' },
-        { time: '10:35 AM', action: 'Gate Alert', user: 'Unknown', ticket: 'Invalid Scan', alert: true },
-        { time: '10:30 AM', action: 'Check-in', user: 'Jane Smith', ticket: '#T-642' },
-    ];
+    const [liveFeed, setLiveFeed] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        recentCheckIns: 0,
+        ticketsScanned: 0, // Used as 'Tickets Sold' for now
+        alerts: 0
+    });
+
+    useEffect(() => {
+        // Fetch Initial Data
+        const fetchActivity = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/organizer/live-activity', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('eventorbit_organizer_token')}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setLiveFeed(data.activities);
+                    setStats(prev => ({
+                        ...prev,
+                        ticketsScanned: data.stats.ticketsScanned, // Total tickets from DB
+                        recentCheckIns: data.stats.recentCheckIns, // Total check-ins
+                        alerts: data.stats.alerts // Total alerts
+                    }));
+                }
+            } catch (error) {
+                console.error("Error fetching live activity:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActivity();
+
+        // WebSocket Connection
+        const socket = io('http://localhost:5000');
+
+        socket.on('connect', () => {
+            console.log("Connected to WebSocket");
+        });
+
+        socket.on('newBooking', (booking) => {
+            console.log("New Booking Received:", booking);
+
+            // Create activity item from booking data
+            const newActivity = {
+                id: Date.now(), // Temp ID
+                time: booking.timestamp,
+                action: 'Ticket Sold',
+                user: booking.customerName || 'New Customer',
+                ticket: `#${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+                eventName: booking.eventTitle,
+                seatNumber: booking.seatNumber,
+                alert: false
+            };
+
+            // Add to feed
+            setLiveFeed(prev => [newActivity, ...prev].slice(0, 20)); // Keep last 20
+
+            // Update Stats
+            setStats(prev => ({
+                ...prev,
+                ticketsScanned: prev.ticketsScanned + 1
+            }));
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, []);
+
+    // Time formatter helper if date-fns not available or preferred simple
+    const formatTime = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
 
     return (
         <div className="space-y-6">
@@ -43,21 +115,21 @@ const LiveMonitor = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <MonitorCard
                     title="Real-time Check-ins"
-                    value="142"
-                    subtext="Last 60 mins: +28"
+                    value={stats.recentCheckIns.toString()}
+                    subtext="Last 20 activities"
                     icon={Users}
                     color="text-green-500"
                 />
                 <MonitorCard
-                    title="Tickets Scanned"
-                    value="89%"
-                    subtext="Capacity: 250/280"
+                    title="Recent Tickets"
+                    value={stats.ticketsScanned.toString()}
+                    subtext="Last 20 activities"
                     icon={Clock}
                     color="text-blue-500"
                 />
                 <MonitorCard
                     title="Gate Alerts"
-                    value="2"
+                    value={stats.alerts.toString()}
                     subtext="Requires Attention"
                     icon={AlertCircle}
                     color="text-red-500"
@@ -69,30 +141,43 @@ const LiveMonitor = () => {
                 <div className="px-6 py-4 border-b border-[var(--border-color)]">
                     <h3 className="font-bold text-[var(--text-page)]">Activity Feed</h3>
                 </div>
-                <div className="divide-y divide-[var(--border-color)]">
-                    {liveFeed.map((item, index) => (
-                        <div key={index} className="px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-subtle)] transition-colors">
-                            <div className="flex items-center gap-4">
-                                <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-page)] px-2 py-1 rounded border border-[var(--border-color)]">
-                                    {item.time}
-                                </span>
-                                <div>
-                                    <p className={`text-sm font-medium ${item.alert ? 'text-red-500' : 'text-[var(--text-page)]'}`}>
-                                        {item.action}
-                                    </p>
-                                    <p className="text-xs text-[var(--text-muted)]">
-                                        {item.user} • <span className="font-mono">{item.ticket}</span>
-                                    </p>
+
+                {loading ? (
+                    <div className="p-8 flex justify-center text-[var(--text-muted)]">
+                        <Loader2 className="animate-spin" size={24} />
+                    </div>
+                ) : liveFeed.length > 0 ? (
+                    <div className="divide-y divide-[var(--border-color)]">
+                        {liveFeed.map((item) => (
+                            <div key={item.id} className="px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-subtle)] transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-page)] px-2 py-1 rounded border border-[var(--border-color)] min-w-[70px] text-center">
+                                        {formatTime(item.time)}
+                                    </span>
+                                    <div>
+                                        <p className={`text-sm font-medium ${item.alert ? 'text-red-500' : 'text-[var(--text-page)]'}`}>
+                                            {item.user} <span className="text-[var(--text-muted)] font-normal text-xs">bought</span> {item.eventName}
+                                        </p>
+                                        <p className="text-xs text-[var(--text-muted)]">
+                                            Seat: <span className="font-mono font-bold text-purple-500">{item.seatNumber || 'N/A'}</span> • <span className="font-mono">{item.ticket}</span>
+                                        </p>
+                                    </div>
                                 </div>
+                                {item.alert && (
+                                    <button className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full font-bold">
+                                        Details
+                                    </button>
+                                )}
                             </div>
-                            {item.alert && (
-                                <button className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full font-bold">
-                                    Details
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 text-center text-[var(--text-muted)]">
+                        <Activity className="mx-auto mb-2 opacity-50" size={32} />
+                        <p>No recent activity detected.</p>
+                        <p className="text-xs mt-1">Sales and check-ins will appear here in real-time.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
