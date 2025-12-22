@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Trash2, Mail } from 'lucide-react';
-import axios from 'axios';
+import { Search, User, Trash2, Mail, Ban, CheckCircle } from 'lucide-react';
+import apiClient from '../api/apiClient';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -8,7 +8,7 @@ const Users = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/admin/users');
+                const res = await apiClient.get('/users');
                 setUsers(res.data);
             } catch (error) {
                 console.error("Error fetching users", error);
@@ -41,6 +41,7 @@ const Users = () => {
                     <thead className="bg-slate-50 dark:bg-slate-900/50 uppercase text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <tr>
                             <th className="px-6 py-4">User</th>
+                            <th className="px-6 py-4">Phone</th>
                             <th className="px-6 py-4">Role</th>
                             <th className="px-6 py-4">Wallet</th>
                             <th className="px-6 py-4">Joined Date</th>
@@ -60,6 +61,11 @@ const Users = () => {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
+                                    <span className="text-slate-600 dark:text-slate-400">
+                                        {user.phone || 'N/A'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium uppercase ${user.role === 'admin' ? 'bg-violet-500/10 text-violet-500' : 'bg-blue-500/10 text-blue-500'
                                         }`}>
                                         {user.role}
@@ -71,9 +77,27 @@ const Users = () => {
                                 <td className="px-6 py-4">{new Date(user.createdAt).toLocaleDateString()}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-2">
-                                        <button className="p-1 text-slate-400 hover:text-white rounded" title="Email">
-                                            <Mail className="w-5 h-5" />
+                                        <button
+                                            onClick={async () => {
+                                                const action = user.isBlocked ? 'unblock' : 'block';
+                                                if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+                                                    try {
+                                                        const res = await apiClient.put(`/users/${user._id}/block`);
+                                                        if (res.data.success) {
+                                                            setUsers(users.map(u => u._id === user._id ? { ...u, isBlocked: res.data.isBlocked } : u));
+                                                        }
+                                                    } catch (err) {
+                                                        console.error(`Failed to ${action} user`, err);
+                                                        alert(`Failed to ${action} user`);
+                                                    }
+                                                }
+                                            }}
+                                            className={`p-1 rounded ${user.isBlocked ? 'text-green-500 hover:bg-green-500/10' : 'text-red-500 hover:bg-red-500/10'}`}
+                                            title={user.isBlocked ? "Unblock User" : "Block User"}
+                                        >
+                                            {user.isBlocked ? <CheckCircle className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
                                         </button>
+
                                     </div>
                                 </td>
                             </tr>
@@ -87,7 +111,7 @@ const Users = () => {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 };
 

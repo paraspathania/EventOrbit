@@ -9,6 +9,7 @@ import eventRoutes from "./routes/event_routes.js";
 import authRoutes from "./routes/auth_routes.js";
 import organizerRoutes from "./routes/organizer_routes.js";
 import bookingRoutes from "./routes/booking_routes.js";
+import adminRoutes from "./routes/admin_routes.js";
 
 const app = express();
 import { createServer } from "http"; // Import createServer
@@ -69,6 +70,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/organizer", organizerRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Database Connection
 mongoose.connect(MONGO_URI)

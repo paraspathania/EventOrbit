@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Search, LayoutDashboard, Calendar, Users, Briefcase, Sun, Moon, Settings, LogOut, User, Ticket, ChevronDown } from 'lucide-react';
+import { Bell, Search, LayoutDashboard, Calendar, Users, Briefcase, Sun, Moon, Settings, LogOut, User, Ticket, ChevronDown, Star } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -82,6 +82,7 @@ const Navbar = () => {
         { name: 'Events', href: '/events', icon: Calendar },
         { name: 'Organizers', href: '/organizers', icon: Briefcase },
         { name: 'Users', href: '/users', icon: Users },
+        { name: 'Reviews', href: '/reviews', icon: Star },
     ];
 
     return (

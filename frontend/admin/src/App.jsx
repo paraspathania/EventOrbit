@@ -8,8 +8,8 @@ import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
+import Reviews from './pages/Reviews';
 import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
 import { useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
@@ -27,7 +27,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
@@ -37,6 +36,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="reviews" element={<Reviews />} />
         </Route>
       </Routes>
     </Router>

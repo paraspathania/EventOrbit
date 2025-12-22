@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, MapPin, Camera, Save, Lock, Shield, Loader2, X, ZoomIn, ZoomOut, Eye, EyeOff, Building, Upload, CheckCircle, ShieldCheck } from 'lucide-react';
+import apiClient from '../api/apiClient';
+import { User, Mail, Phone, MapPin, Camera, Save, Lock, Shield, Loader2, X, ZoomIn, ZoomOut, Eye, EyeOff, Building, Upload, CheckCircle, ShieldCheck, Edit2 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/canvasUtils';
 import { indianCities } from '../utils/cities';
@@ -9,6 +10,7 @@ const Profile = () => {
     const { user } = useAuth();
 
     // --- User Profile State (from User Panel) ---
+    const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [avatarPreview, setAvatarPreview] = useState(null);
@@ -97,36 +99,54 @@ const Profile = () => {
     const handlePasswordChange = (e) => setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
     const togglePasswordVisibility = (field) => setShowPasswords({ ...showPasswords, [field]: !showPasswords[field] });
 
-    const changePasswordMock = async (current, newPass) => {
-        // Mock API call
-        return new Promise((resolve) => setTimeout(resolve, 1000));
-    };
-
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         setPasswordError(''); setPasswordSuccess('');
         if (passwordData.newPassword !== passwordData.confirmPassword) return setPasswordError("New passwords don't match");
-        if (passwordData.newPassword.length < 6) return setPasswordError("Password must be at least 6 characters");
+        if (passwordData.newPassword.length < 8) return setPasswordError("Password must be at least 8 characters");
 
         setPasswordLoading(true);
         try {
-            await changePasswordMock(passwordData.currentPassword, passwordData.newPassword);
-            setPasswordSuccess('Password changed successfully!');
-            setLastPasswordChange('Just now');
-            localStorage.setItem('password_last_changed', new Date().toLocaleDateString());
-            setTimeout(() => { setIsPasswordModalOpen(false); setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPasswordSuccess(''); }, 1500);
-        } catch (error) { setPasswordError(error.message); } finally { setPasswordLoading(false); }
+            const res = await apiClient.put('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+
+            if (res.data.success) {
+                setPasswordSuccess('Password changed successfully!');
+                setLastPasswordChange('Just now');
+                localStorage.setItem('password_last_changed', new Date().toLocaleDateString());
+                setTimeout(() => { setIsPasswordModalOpen(false); setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPasswordSuccess(''); }, 1500);
+            }
+        } catch (error) {
+            setPasswordError(error.response?.data?.message || "Failed to update password");
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        localStorage.setItem('organizer_profile_data', JSON.stringify(formData)); // Persist logic
-        setLoading(false);
-        setSuccessMsg('Profile updated successfully!');
-        setTimeout(() => setSuccessMsg(''), 3000);
+        try {
+            const res = await apiClient.put('/organizer/profile', formData);
+            if (res.data.success) {
+                setSuccessMsg('Profile updated successfully!');
+                setIsEditing(false);
+                // Update local storage
+                localStorage.setItem('organizer_profile_data', JSON.stringify(formData));
+                const currentUser = JSON.parse(localStorage.getItem('eventorbit_user'));
+                if (currentUser) {
+                    localStorage.setItem('eventorbit_user', JSON.stringify({ ...currentUser, ...res.data.user }));
+                }
+            }
+        } catch (error) {
+            console.error("Update failed", error);
+            setSuccessMsg(error.response?.data?.message || 'Failed to update profile.'); // Show actual error
+        } finally {
+            setLoading(false);
+            setTimeout(() => setSuccessMsg(''), 3000);
+        }
     };
 
     // Image Handlers
@@ -229,7 +249,7 @@ const Profile = () => {
                                 <label className="text-sm font-medium text-[var(--text-page)] flex items-center gap-2">
                                     <User size={16} className="text-[#FFDA8A]" /> Full Name
                                 </label>
-                                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all" placeholder="John Doe" />
+                                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} disabled={!isEditing} className={`w-full px-4 py-2.5 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all ${!isEditing ? 'bg-gray-50 dark:bg-slate-800/50 cursor-not-allowed' : 'bg-white dark:bg-slate-900'}`} placeholder="John Doe" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[var(--text-page)] flex items-center gap-2">
@@ -241,14 +261,14 @@ const Profile = () => {
                                 <label className="text-sm font-medium text-[var(--text-page)] flex items-center gap-2">
                                     <Phone size={16} className="text-[#FFDA8A]" /> Phone Number
                                 </label>
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all" placeholder="+91 98765 43210" />
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} className={`w-full px-4 py-2.5 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all ${!isEditing ? 'bg-gray-50 dark:bg-slate-800/50 cursor-not-allowed' : 'bg-white dark:bg-slate-900'}`} placeholder="+91 98765 43210" />
                             </div>
                             <div className="space-y-2 relative">
                                 <label className="text-sm font-medium text-[var(--text-page)] flex items-center gap-2">
                                     <MapPin size={16} className="text-[#FFDA8A]" /> Location
                                 </label>
-                                <input type="text" name="location" value={formData.location} onChange={handleLocationChange} onFocus={() => formData.location && setShowCitySuggestions(true)} onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)} className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all" placeholder="Type city name..." />
-                                {showCitySuggestions && (
+                                <input type="text" name="location" value={formData.location} onChange={handleLocationChange} disabled={!isEditing} onFocus={() => formData.location && isEditing && setShowCitySuggestions(true)} onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)} className={`w-full px-4 py-2.5 border border-[var(--border-color)] rounded-xl text-[var(--text-page)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFDA8A]/50 focus:border-[#FFDA8A] transition-all ${!isEditing ? 'bg-gray-50 dark:bg-slate-800/50 cursor-not-allowed' : 'bg-white dark:bg-slate-900'}`} placeholder="Type city name..." />
+                                {showCitySuggestions && isEditing && (
                                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                                         {citySuggestions.map((city, index) => <button key={index} type="button" onClick={() => selectCity(city)} className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">{city}</button>)}
                                     </div>
@@ -259,14 +279,34 @@ const Profile = () => {
 
                         {/* Actions */}
                         <div className="flex items-center gap-4 pt-4 border-t border-[var(--border-color)]">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-6 py-2.5 bg-[#FFDA8A] hover:bg-[#ffc107] text-gray-900 font-semibold rounded-xl shadow-lg shadow-[#FFDA8A]/20 transition-all flex items-center gap-2"
-                            >
-                                {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                                Save Changes
-                            </button>
+                            {!isEditing ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="px-6 py-2.5 bg-[#FFDA8A] hover:bg-[#ffc107] text-gray-900 font-semibold rounded-xl shadow-lg shadow-[#FFDA8A]/20 transition-all flex items-center gap-2"
+                                >
+                                    <Edit2 size={18} />
+                                    Edit Profile
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsEditing(false); window.location.reload(); }}
+                                        className="px-6 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="px-6 py-2.5 bg-[#FFDA8A] hover:bg-[#ffc107] text-gray-900 font-semibold rounded-xl shadow-lg shadow-[#FFDA8A]/20 transition-all flex items-center gap-2"
+                                    >
+                                        {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                                        Save Changes
+                                    </button>
+                                </>
+                            )}
                             {successMsg && <span className="text-green-600 dark:text-green-400 text-sm font-medium animate-in fade-in slide-in-from-left-2">{successMsg}</span>}
                         </div>
                     </form>

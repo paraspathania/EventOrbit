@@ -32,15 +32,39 @@ export const NotificationProvider = ({ children }) => {
             }
         });
 
+        // Generic Notification
         socket.on('notification', (data) => {
+            addNotification(data.message || "New notification received");
+        });
+
+        // 1. New Booking
+        socket.on('newBooking', (data) => {
+            const msg = `New Booking: ${data.quantity}x ${data.seatType} for '${data.eventTitle}' by ${data.customerName}`;
+            addNotification(msg);
+        });
+
+        // 2. Check-In Alert
+        socket.on('checkInAlert', (data) => {
+            const msg = `Check-In: ${data.attendeeName} (${data.seatType}) for '${data.eventTitle}'`;
+            addNotification(msg);
+        });
+
+        // 3. Event Created
+        socket.on('eventCreated', (data) => {
+            const msg = `New Event Created: '${data.eventTitle}'`;
+            addNotification(msg);
+        });
+
+        // Helper to add notification
+        const addNotification = (text) => {
             const newNotif = {
                 id: Date.now(),
-                text: data.message || "New notification received",
+                text: text,
                 time: "Just now",
                 unread: true
             };
             setNotifications(prev => [newNotif, ...prev]);
-        });
+        };
 
         return () => {
             socket.off('notification');

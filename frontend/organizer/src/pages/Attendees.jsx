@@ -81,11 +81,12 @@ const Attendees = () => {
     const handleExport = () => {
         if (!attendees.length) return;
 
-        const headers = ["Name", "Email", "Phone", "Ticket Type", "Seat", "Status"];
+        const headers = ["Name", "Email", "Phone", "Event", "Ticket Type", "Seat", "Status"];
         const rows = attendees.map(a => [
             a.name,
             a.email,
             a.phone,
+            a.event,
             a.ticket,
             a.seat,
             a.status
@@ -160,8 +161,9 @@ const Attendees = () => {
                         <thead>
                             <tr className="border-b border-[var(--border-color)] bg-[var(--bg-subtle)]">
                                 <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Name</th>
+                                <th className="p-4 font-medium text-[var(--text-muted)] text-sm hidden md:table-cell text-center">Event Name</th>
                                 <th className="p-4 font-medium text-[var(--text-muted)] text-sm hidden md:table-cell">Email</th>
-                                <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Ticket Type</th>
+                                <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Type</th>
                                 <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Seat</th>
                                 <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Status</th>
                                 <th className="p-4 font-medium text-[var(--text-muted)] text-sm">Actions</th>
@@ -182,25 +184,50 @@ const Attendees = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-[var(--text-page)]">{attendee.name}</p>
+                                                    <p className="text-[10px] text-purple-600 font-bold md:hidden">{attendee.event}</p>
                                                     <p className="text-xs text-[var(--text-muted)] md:hidden">{attendee.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 text-[var(--text-page)] hidden md:table-cell">{attendee.email}</td>
-                                        <td className="p-4 text-[var(--text-page)]">{attendee.ticket}</td>
+                                        <td className="p-4 text-[var(--text-page)] hidden md:table-cell max-w-[150px] truncate font-semibold text-center text-xs">
+                                            {attendee.event}
+                                        </td>
+                                        <td className="p-4 text-[var(--text-page)] hidden md:table-cell text-sm">{attendee.email}</td>
+                                        <td className="p-4 text-[var(--text-page)]">
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${attendee.ticket?.toLowerCase() === 'vip'
+                                                ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                }`}>
+                                                {attendee.ticket}
+                                            </span>
+                                        </td>
                                         <td className="p-4 text-[var(--text-page)] font-mono text-xs">{attendee.seat}</td>
                                         <td className="p-4">
                                             <StatusBadge status={attendee.status} />
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
+                                                {/* Check In Action */}
                                                 {attendee.status !== 'Checked In' && attendee.status !== 'Cancelled' && (
                                                     <button
                                                         onClick={() => updateStatus(attendee.id, 'checked_in')}
-                                                        className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors" title="Check In">
+                                                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                                        title="Gate Check-In">
+                                                        <CheckCircle size={14} /> Check In
+                                                    </button>
+                                                )}
+
+                                                {/* Confirm Action (for Pending/Cancelled) */}
+                                                {(attendee.status === 'Pending' || attendee.status === 'Cancelled') && (
+                                                    <button
+                                                        onClick={() => updateStatus(attendee.id, 'confirmed')}
+                                                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                                        title="Confirm Booking (Approve)">
                                                         <CheckCircle size={18} />
                                                     </button>
                                                 )}
+
+                                                {/* Mark Pending */}
                                                 {attendee.status !== 'Pending' && attendee.status !== 'Cancelled' && (
                                                     <button
                                                         onClick={() => updateStatus(attendee.id, 'pending')}
@@ -208,6 +235,8 @@ const Attendees = () => {
                                                         <Clock size={18} />
                                                     </button>
                                                 )}
+
+                                                {/* Cancel Action */}
                                                 {attendee.status !== 'Cancelled' && (
                                                     <button
                                                         onClick={() => handleCancelClick(attendee.id)}

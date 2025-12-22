@@ -33,7 +33,7 @@ const Notifications = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-[var(--text-page)]">Notifications</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h2>
                 <button
                     onClick={markAllRead}
                     className="px-4 py-2 text-sm font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/10 hover:bg-yellow-100 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
@@ -42,23 +42,23 @@ const Notifications = () => {
                 </button>
             </div>
 
-            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
                 {notifications.length > 0 ? (
-                    <div className="divide-y divide-[var(--border-color)]">
+                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`p-4 flex items-start gap-4 transition-colors hover:bg-[var(--bg-subtle)] ${!notification.isRead ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                                className={`p-4 flex items-start gap-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 ${!notification.isRead ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                             >
-                                <div className={`p-2 rounded-full flex-shrink-0 bg-[var(--bg-page)]`}>
+                                <div className={`p-2 rounded-full flex-shrink-0 bg-slate-50 dark:bg-slate-900`}>
                                     {getIcon(notification.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start">
-                                        <p className={`text-sm ${!notification.isRead ? 'font-semibold' : 'font-medium'} text-[var(--text-page)]`}>
+                                        <p className={`text-sm ${!notification.isRead ? 'font-semibold' : 'font-medium'} text-slate-900 dark:text-white`}>
                                             {notification.text}
                                         </p>
-                                        <span className="flex items-center text-xs text-[var(--text-muted)] whitespace-nowrap ml-4">
+                                        <span className="flex items-center text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap ml-4">
                                             <Clock className="w-3 h-3 mr-1" />
                                             {notification.time}
                                         </span>
@@ -78,7 +78,7 @@ const Notifications = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="p-12 text-center text-[var(--text-muted)]">
+                    <div className="p-12 text-center text-slate-500 dark:text-slate-400">
                         <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
                         <p>No notifications found</p>
                     </div>

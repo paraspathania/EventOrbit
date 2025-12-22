@@ -12,6 +12,7 @@ import KYC from './pages/KYC';
 import Notifications from './pages/Notifications';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import GateKeeper from './pages/GateKeeper';
 import { useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -49,6 +50,7 @@ function App() {
                         <Route path="attendees" element={<ProtectedRoute><Attendees /></ProtectedRoute>} />
                         <Route path="revenue" element={<ProtectedRoute><Revenue /></ProtectedRoute>} />
                         <Route path="kyc" element={<ProtectedRoute><KYC /></ProtectedRoute>} />
+                        <Route path="scan" element={<ProtectedRoute><GateKeeper /></ProtectedRoute>} />
                         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                     </Route>

@@ -116,6 +116,7 @@ export const getAttendees = async (req, res) => {
                 phone: b.user ? b.user.phone : 'N/A',
                 ticket: b.seatType || 'General',
                 seat: b.seatNumber || 'N/A',
+                event: b.event ? b.event.title : 'N/A',
                 status: displayStatus
             };
         });
@@ -154,6 +155,8 @@ export const getOrganizerProfile = async (req, res) => {
 // @access  Private
 export const updateOrganizerProfile = async (req, res) => {
     try {
+        console.log("updateOrganizerProfile called with body:", req.body); // DEBUG LOG
+
         if (!req.user) {
             return res.status(401).json({ message: "Not authorized" });
         }
@@ -164,6 +167,8 @@ export const updateOrganizerProfile = async (req, res) => {
             user.fullName = req.body.fullName || user.fullName;
             user.email = req.body.email || user.email;
             user.phone = req.body.phone || user.phone;
+            user.location = req.body.location || user.location;
+            user.kycStatus = req.body.kycStatus || user.kycStatus;
 
             // Update Organization Details
             if (req.body.organizationDetails) {
@@ -171,6 +176,14 @@ export const updateOrganizerProfile = async (req, res) => {
                     ...user.organizationDetails,
                     ...req.body.organizationDetails
                 };
+
+                // Explicitly check for kycDocument (from Cloudinary upload)
+                if (req.file && req.file.path) {
+                    user.organizationDetails.kycDocument = req.file.path;
+                } else if (req.body.organizationDetails && req.body.organizationDetails.kycDocument) {
+                    // Fallback for direct URL updates (if any)
+                    user.organizationDetails.kycDocument = req.body.organizationDetails.kycDocument;
+                }
             }
 
             // Update Bank Details
@@ -182,6 +195,7 @@ export const updateOrganizerProfile = async (req, res) => {
             }
 
             const updatedUser = await user.save();
+            console.log("Organizer updated successfully:", updatedUser); // DEBUG LOG
 
             res.json({
                 success: true,
@@ -191,6 +205,7 @@ export const updateOrganizerProfile = async (req, res) => {
                     email: updatedUser.email,
                     role: updatedUser.role,
                     phone: updatedUser.phone,
+                    location: updatedUser.location,
                     organizationDetails: updatedUser.organizationDetails,
                     bankDetails: updatedUser.bankDetails,
                     kycStatus: updatedUser.kycStatus

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Bell, Search, User, Sun, Moon, Menu, LayoutDashboard, CalendarPlus, Activity, Users, IndianRupee, UserCheck, Ticket, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Search, User, Sun, Moon, Menu, LayoutDashboard, CalendarPlus, Activity, Users, IndianRupee, UserCheck, Ticket, LogOut, ChevronDown, Scan } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -60,7 +60,7 @@ const TopBar = ({ toggleSidebar }) => {
             <div className="flex items-center gap-2 min-w-fit">
                 <Link to="/" className="flex items-center gap-2 font-bold text-2xl text-[var(--text-page)]">
                     <Ticket className="text-yellow-500 fill-yellow-500" />
-                    <span>EO<span className="text-yellow-500">Admin</span></span>
+                    <span>EO<span className="text-yellow-500">GANIZER</span></span>
                 </Link>
             </div>
 
@@ -90,8 +90,8 @@ const TopBar = ({ toggleSidebar }) => {
 
             {/* Actions */}
             <div className="flex items-center gap-3 sm:gap-4 ml-auto lg:ml-0">
-                {/* Search (Compact) */}
-                <div className="hidden xl:flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-[var(--border-color)] w-64 focus-within:ring-2 focus-within:ring-yellow-400/50 transition-all">
+                {/* Search (Compact Interface) */}
+                <div className="hidden xl:flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-[var(--border-color)] w-40 focus-within:ring-2 focus-within:ring-yellow-400/50 transition-all">
                     <Search size={16} className="text-gray-400" />
                     <input
                         type="text"
@@ -103,6 +103,15 @@ const TopBar = ({ toggleSidebar }) => {
                 </div>
 
                 <div className="flex items-center gap-2 relative">
+                    {/* Gate Entry Action */}
+                    <Link
+                        to="/scan"
+                        className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm text-sm font-medium mr-2"
+                    >
+                        <Scan size={16} />
+                        <span>Scan</span>
+                    </Link>
+
                     <button onClick={toggleTheme} className="p-2 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] rounded-full transition-colors">
                         {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
@@ -152,50 +161,69 @@ const TopBar = ({ toggleSidebar }) => {
 
                     {/* Auth Action & Profile Dropdown */}
                     <div className="relative pl-2 sm:pl-4 border-l border-[var(--border-color)]" ref={profileRef}>
-                        <button
-                            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                            className="flex items-center gap-2 pl-2 pr-2 sm:pr-4 py-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-100 dark:hover:border-slate-700 transition-all text-left"
-                        >
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-[#FFDA8A] to-[#ffc107] rounded-full flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white dark:ring-slate-700 text-gray-800">
-                                {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'O'}
-                            </div>
-                            <div className="text-left hidden md:block">
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-none">
-                                    {user?.fullName || user?.name || 'Organizer'}
-                                </p>
-                            </div>
-                            <ChevronDown size={16} className={`hidden sm:block text-gray-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
-                        </button>
+                        {isAuthenticated ? (
+                            <>
+                                <button
+                                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                    className="flex items-center gap-2 pl-2 pr-2 sm:pr-4 py-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-100 dark:hover:border-slate-700 transition-all text-left"
+                                >
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-[#FFDA8A] to-[#ffc107] rounded-full flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white dark:ring-slate-700 text-gray-800">
+                                        {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'O'}
+                                    </div>
+                                    <div className="text-left hidden md:block">
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-none">
+                                            {user?.fullName || user?.name || 'Organizer'}
+                                        </p>
+                                    </div>
+                                    <ChevronDown size={16} className={`hidden sm:block text-gray-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                                </button>
 
-                        {/* Profile Dropdown */}
-                        {showProfileDropdown && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-800">
-                                    <p className="text-sm font-bold text-[var(--text-page)]">Signed in as</p>
-                                    <p className="text-sm text-[var(--text-muted)] truncate">{user?.email}</p>
-                                </div>
-                                <div className="p-1">
-                                    <Link
-                                        to="/profile"
-                                        onClick={() => setShowProfileDropdown(false)}
-                                        className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                                    >
-                                        <User size={16} />
-                                        Your Profile
-                                    </Link>
-                                </div>
-                                <div className="p-1 border-t border-gray-50 dark:border-slate-800">
-                                    <button
-                                        onClick={() => {
-                                            logout();
-                                            setShowProfileDropdown(false);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left"
-                                    >
-                                        <LogOut size={16} />
-                                        Sign out
-                                    </button>
-                                </div>
+                                {/* Profile Dropdown */}
+                                {showProfileDropdown && (
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-800">
+                                            <p className="text-sm font-bold text-[var(--text-page)]">Signed in as</p>
+                                            <p className="text-sm text-[var(--text-muted)] truncate">{user?.email}</p>
+                                        </div>
+                                        <div className="p-1">
+                                            <Link
+                                                to="/profile"
+                                                onClick={() => setShowProfileDropdown(false)}
+                                                className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-page)] hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                            >
+                                                <User size={16} />
+                                                Your Profile
+                                            </Link>
+                                        </div>
+                                        <div className="p-1 border-t border-gray-50 dark:border-slate-800">
+                                            <button
+                                                onClick={() => {
+                                                    logout();
+                                                    setShowProfileDropdown(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left"
+                                            >
+                                                <LogOut size={16} />
+                                                Sign out
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    to="/login"
+                                    className="hidden sm:block px-4 py-2 text-sm font-medium text-[var(--text-page)] hover:bg-[var(--bg-subtle)] rounded-lg transition-all"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    to="/signup"
+                                    className="px-4 py-2 text-sm font-semibold bg-[#FFDA8A] hover:bg-[#ffc107] text-gray-900 rounded-lg transition-all shadow-sm"
+                                >
+                                    Sign Up
+                                </Link>
                             </div>
                         )}
                     </div>

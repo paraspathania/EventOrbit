@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MoreVertical, Check, X } from 'lucide-react';
-import axios from 'axios';
+import { Search, Plus, Filter, MoreVertical, Check, X, Ban } from 'lucide-react';
+import apiClient from '../api/apiClient';
 
 const Events = () => {
     const [events, setEvents] = useState([]);
@@ -8,7 +8,7 @@ const Events = () => {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/admin/events');
+                const res = await apiClient.get('/events');
                 setEvents(res.data);
             } catch (error) {
                 console.error("Error fetching events:", error);
@@ -26,13 +26,14 @@ const Events = () => {
             case 'approved': return 'bg-green-500/10 text-green-500';
             case 'pending': return 'bg-yellow-500/10 text-yellow-500';
             case 'rejected': return 'bg-red-500/10 text-red-500';
+            case 'cancelled': return 'bg-gray-500/10 text-gray-500';
             default: return 'bg-slate-500/10 text-slate-500';
         }
     };
 
     const handleStatusUpdate = async (id, status) => {
         try {
-            await axios.put(`http://localhost:5000/api/admin/events/${id}/status`, { status });
+            await apiClient.put(`/events/${id}/status`, { status });
             setEvents(events.map(e => e._id === id ? { ...e, status } : e));
         } catch (error) {
             console.error("Error updating status", error);
@@ -43,10 +44,6 @@ const Events = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Events Management</h2>
-                <button className="flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create Event
-                </button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -109,6 +106,7 @@ const Events = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
+                                            {/* Pending: Approve / Reject */}
                                             {event.status === 'pending' && (
                                                 <>
                                                     <button onClick={() => handleStatusUpdate(event._id, 'approved')} className="p-1 text-green-500 hover:bg-green-500/10 rounded" title="Approve">
@@ -119,9 +117,36 @@ const Events = () => {
                                                     </button>
                                                 </>
                                             )}
-                                            <button className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded">
-                                                <MoreVertical className="w-5 h-5" />
-                                            </button>
+
+                                            {/* Cancelled: Uncancel (Revert to Pending) */}
+                                            {event.status === 'cancelled' && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Restore this event to Pending status?')) {
+                                                            handleStatusUpdate(event._id, 'pending');
+                                                        }
+                                                    }}
+                                                    className="p-1 text-yellow-500 hover:bg-yellow-500/10 rounded flex items-center gap-1"
+                                                    title="Restore Event"
+                                                >
+                                                    <span className="text-xs font-medium">Restore</span>
+                                                </button>
+                                            )}
+
+                                            {/* Active/Approved: Cancel Option */}
+                                            {event.status === 'approved' && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Are you sure you want to cancel this event?')) {
+                                                            handleStatusUpdate(event._id, 'cancelled');
+                                                        }
+                                                    }}
+                                                    className="p-1 text-red-500 hover:text-red-700 rounded"
+                                                    title="Cancel Event"
+                                                >
+                                                    <Ban className="w-5 h-5" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Shield, Key, Smartphone, MapPin, CheckCircle, Save, Loader2, Camera, Lock } from 'lucide-react';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import apiClient from '../api/apiClient';
+import { User, Mail, Shield, Key, Smartphone, MapPin, CheckCircle, Save, Loader2, Camera, Lock, Eye, EyeOff, X } from 'lucide-react';
 
 const Profile = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
 
     // Admin Data State
     const [adminDetails, setAdminDetails] = useState({
@@ -15,26 +18,25 @@ const Profile = () => {
         location: ''
     });
 
-    useEffect(() => {
-        fetchAdminProfile();
-    }, []);
+    // Password State
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
 
-    const fetchAdminProfile = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/admin/profile');
-            if (response.data) {
-                setAdminDetails({
-                    name: response.data.fullName || '',
-                    email: response.data.email || '',
-                    role: response.data.role || 'Super Admin',
-                    phone: response.data.phone || '',
-                    location: response.data.location || ''
-                });
-            }
-        } catch (error) {
-            console.error("Error fetching profile:", error);
+    useEffect(() => {
+        if (user) {
+            setAdminDetails({
+                name: user.fullName || '',
+                email: user.email || '',
+                role: user.role || 'Admin',
+                phone: user.phone || '',
+                location: user.location || ''
+            });
         }
-    };
+    }, [user]);
 
     const handleChange = (e) => {
         setAdminDetails({ ...adminDetails, [e.target.name]: e.target.value });
@@ -43,21 +45,72 @@ const Profile = () => {
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setErrorMsg('');
+        setSuccessMsg('');
+
         try {
-            await axios.put('http://localhost:5000/api/admin/profile', {
+            // Using generic auth profile update since admin specific route doesn't exist/isn't needed
+            const res = await apiClient.put('/auth/profile', {
                 fullName: adminDetails.name,
                 phone: adminDetails.phone,
                 location: adminDetails.location
             });
-            // Simulate delay for UX
-            await new Promise(resolve => setTimeout(resolve, 800));
-            alert('Profile updated successfully!');
-            window.location.reload();
+
+            if (res.data.success) {
+                setSuccessMsg('Profile updated successfully!');
+
+                // Update local storage to reflect changes immediately
+                const currentUser = JSON.parse(localStorage.getItem('eventorbit_admin_user'));
+                if (currentUser) {
+                    const updatedUser = { ...currentUser, ...res.data };
+                    // Ensure token is preserved if returned, else keep old
+                    localStorage.setItem('eventorbit_admin_user', JSON.stringify(updatedUser));
+                }
+            }
         } catch (error) {
             console.error("Error updating profile:", error);
-            alert('Failed to update profile.');
+            setErrorMsg(error.response?.data?.message || 'Failed to update profile.');
         } finally {
             setLoading(false);
+            setTimeout(() => setSuccessMsg(''), 3000);
+        }
+    };
+
+    // Password Handlers
+    const handlePasswordChange = (e) => setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    const togglePasswordVisibility = (field) => setShowPasswords({ ...showPasswords, [field]: !showPasswords[field] });
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            return setPasswordError("New passwords don't match");
+        }
+        if (passwordData.newPassword.length < 8) {
+            return setPasswordError("Password must be at least 8 characters");
+        }
+
+        setPasswordLoading(true);
+        try {
+            const res = await apiClient.put('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+
+            if (res.data.success) {
+                setPasswordSuccess('Password changed successfully!');
+                setTimeout(() => {
+                    setIsPasswordModalOpen(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    setPasswordSuccess('');
+                }, 1500);
+            }
+        } catch (error) {
+            setPasswordError(error.response?.data?.message || "Failed to update password");
+        } finally {
+            setPasswordLoading(false);
         }
     };
 
@@ -83,10 +136,6 @@ const Profile = () => {
                                     {adminDetails.name.charAt(0) || <User size={32} />}
                                 </div>
                             </div>
-                            {/* Camera Icon (Visual only for now since upload logic wasn't in original admin) */}
-                            <button className="absolute bottom-1 right-1 p-2 bg-[#FFDA8A] text-gray-900 rounded-full shadow-lg hover:bg-[#ffc107] transition-transform hover:scale-105" title="Change Photo">
-                                <Camera size={14} />
-                            </button>
                         </div>
                     </div>
 
@@ -175,18 +224,20 @@ const Profile = () => {
                                 {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                                 Save Changes
                             </button>
+                            {successMsg && <span className="text-green-600 font-medium animate-in fade-in">{successMsg}</span>}
+                            {errorMsg && <span className="text-red-600 font-medium animate-in fade-in">{errorMsg}</span>}
                         </div>
                     </form>
                 </div>
             </div>
 
-            {/* Security Section (Stacked below) */}
+            {/* Security Section */}
             <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm p-8">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"><Lock size={20} /></div>
                     <div>
-                        <h3 className="text-lg font-bold text-[var(--text-page)]">Security & Recovery</h3>
-                        <p className="text-sm text-[var(--text-muted)]">Manage your account security and 2FA.</p>
+                        <h3 className="text-lg font-bold text-[var(--text-page)]">Security & Password</h3>
+                        <p className="text-sm text-[var(--text-muted)]">Manage your account security.</p>
                     </div>
                 </div>
 
@@ -199,31 +250,55 @@ const Profile = () => {
                             </div>
                             <div>
                                 <p className="font-medium text-[var(--text-page)]">Login Password</p>
-                                <p className="text-sm text-[var(--text-muted)]">Last changed: 3 months ago</p>
+                                <p className="text-sm text-[var(--text-muted)]">Ensure your account is using a strong password.</p>
                             </div>
                         </div>
-                        <button className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-[var(--border-color)] rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                        <button
+                            onClick={() => setIsPasswordModalOpen(true)}
+                            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-[var(--border-color)] rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                        >
                             Change Password
-                        </button>
-                    </div>
-
-                    {/* Recovery Email */}
-                    <div className="flex items-center justify-between p-4 border border-[var(--border-color)] rounded-xl bg-[var(--bg-page)]">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg">
-                                <Mail size={18} />
-                            </div>
-                            <div>
-                                <p className="font-medium text-[var(--text-page)]">Recovery Email</p>
-                                <p className="text-sm text-[var(--text-muted)]">ad***@eventorbit.com</p>
-                            </div>
-                        </div>
-                        <button className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-[var(--border-color)] rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                            Update
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Password Modal */}
+            {isPasswordModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-800 dark:text-white">Change Password</h3>
+                            <button onClick={() => setIsPasswordModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500"><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
+                            {passwordError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">{passwordError}</div>}
+                            {passwordSuccess && <div className="p-3 bg-green-50 text-green-600 text-sm rounded-lg">{passwordSuccess}</div>}
+
+                            {[{ name: 'currentPassword', label: 'Current Password', showKey: 'current' }, { name: 'newPassword', label: 'New Password', showKey: 'new' }, { name: 'confirmPassword', label: 'Confirm New Password', showKey: 'confirm' }].map((field) => (
+                                <div key={field.name} className="space-y-1.5">
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{field.label}</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords[field.showKey] ? "text" : "password"}
+                                            name={field.name}
+                                            value={passwordData[field.name]}
+                                            onChange={handlePasswordChange}
+                                            required
+                                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-[#FFDA8A]/50 pr-12"
+                                            placeholder="••••••"
+                                        />
+                                        <button type="button" onClick={() => togglePasswordVisibility(field.showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">{showPasswords[field.showKey] ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="submit" disabled={passwordLoading} className="w-full px-6 py-3 bg-[#FFDA8A] font-semibold rounded-xl mt-2 flex justify-center gap-2">
+                                {passwordLoading ? <Loader2 className="animate-spin" /> : <Save />} Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
