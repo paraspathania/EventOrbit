@@ -124,7 +124,7 @@ const SignIn = () => {
 
                     <div className="mt-6 text-center">
                         <p className="text-xs text-[var(--text-muted)]">
-                            EventOrbit Admin Panel &copy; 2025
+                            EventOrbit Admin Panel &copy; 2024
                         </p>
                     </div>
                 </form>

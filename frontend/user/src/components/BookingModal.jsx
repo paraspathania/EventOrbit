@@ -11,9 +11,8 @@ const BookingModal = ({ event, onClose }) => {
 
     // Parse price
     const prices = typeof event.price === 'object' ? event.price : { Regular: event.price, VIP: (event.price * 2) || 0 };
-    const regularPrice = prices.Regular || prices.Standard || 0;
+    const regularPrice = prices.Regular || 0;
     const vipPrice = prices.VIP || 0;
-    const regularLabel = prices.Regular ? 'Regular' : 'Standard';
 
     const handleNext = () => {
         if (step === 1 && selectedType) setStep(2);
@@ -70,18 +69,18 @@ const BookingModal = ({ event, onClose }) => {
                 {/* STEP 1: SELECT TYPE */}
                 {step === 1 && (
                     <div className="space-y-3 mb-8">
-                        {/* Regular/Standard */}
+                        {/* Regular */}
                         <div
-                            onClick={() => setSelectedType(regularLabel)}
-                            className={`p-4 rounded-xl border-2 cursor-pointer flex justify-between items-center transition-all ${selectedType === regularLabel ? 'border-purple-500 bg-purple-500/10' : 'border-[var(--border-color)] hover:border-purple-500/50'}`}
+                            onClick={() => setSelectedType('Regular')}
+                            className={`p-4 rounded-xl border-2 cursor-pointer flex justify-between items-center transition-all ${selectedType === 'Regular' ? 'border-purple-500 bg-purple-500/10' : 'border-[var(--border-color)] hover:border-purple-500/50'}`}
                         >
                             <div>
-                                <p className="font-semibold text-[var(--text-page)]">{regularLabel}</p>
+                                <p className="font-semibold text-[var(--text-page)]">Regular</p>
                                 <p className="text-xs text-[var(--text-muted)]">Standard Access</p>
                             </div>
                             <div className="text-right">
                                 <span className="block font-bold text-[var(--text-page)]">₹{regularPrice}</span>
-                                {selectedType === regularLabel && <Check size={16} className="text-purple-500 ml-auto mt-1" />}
+                                {selectedType === 'Regular' && <Check size={16} className="text-purple-500 ml-auto mt-1" />}
                             </div>
                         </div>
                         {/* VIP */}

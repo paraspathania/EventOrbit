@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllEvents, createEvent, addReview, getEventReviews, getUserReviews, deleteEvent, updateEvent } from "../controllers/event_controller.js";
+import { getAllEvents, createEvent, addReview, getEventReviews, getUserReviews } from "../controllers/event_controller.js";
 import { protect } from "../middleware/auth_middleware.js";
 import { eventValidation, validate } from "../middleware/validator.js";
 import upload from "../middleware/upload.js";
@@ -15,8 +15,6 @@ router.get("/my-reviews", protect, getUserReviews);
 
 // Private route (create event)
 router.post("/", protect, upload.single('banner'), parseMultipartBody, eventValidation, validate, createEvent);
-router.delete("/:id", protect, deleteEvent);
-router.put("/:id", protect, updateEvent);
 
 // Reviews
 router.post("/:id/reviews", protect, addReview);

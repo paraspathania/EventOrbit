@@ -12,14 +12,24 @@ import bookingRoutes from "./routes/booking_routes.js";
 import adminRoutes from "./routes/admin_routes.js";
 
 const app = express();
-import { createServer } from "http"; // Import createServer
-import { Server } from "socket.io"; // Import socket.io
+import http from "http";
+import { Server } from "socket.io";
 
-const httpServer = createServer(app); // Wrap express app
+const httpServer = http.createServer(app); // Wrap express app
+
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"], // User, Organizer & Admin Ports
-    methods: ["GET", "POST"]
+    origin: [
+      process.env.ADMIN_URL,
+      process.env.ORGANIZER_URL,
+      process.env.USER_URL,
+      "https://event-orbit-organizer.vercel.app",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
   }
 });
 
@@ -35,10 +45,31 @@ const MONGO_URI = process.env.MONGO_URI;
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
-  credentials: true // Important for cookies
-}));
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      // ✅ allow any vercel.app deployment
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error("CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.options(/.* /, cors()); // Enable pre-flight for all routes (RegExp to avoid path-to-regexp error)
 
 import session from "express-session";
 import cookieParser from "cookie-parser";
@@ -50,6 +81,13 @@ app.use(session({
   saveUninitialized: true,
   cookie: { maxAge: 10 * 60 * 1000 } // 10 minutes
 }));
+
+// Health Check Endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+// Theme Preference Route
 
 // Theme Preference Route
 app.post('/api/theme', (req, res) => {
@@ -66,6 +104,12 @@ app.use((req, res, next) => {
 });
 
 // Routes
+import { checkMaintenance } from "./middleware/maintenance_middleware.js";
+
+// Apply maintenance check to all API routes
+// The middleware internally skips admin routes
+app.use("/api", checkMaintenance);
+
 app.use("/api/events", eventRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/organizer", organizerRoutes);
