@@ -161,3 +161,65 @@ export const getUserReviews = async (req, res) => {
         res.status(500).json({ success: false, message: "Server Error" });
     }
 };
+
+// @desc    Delete Event
+// @route   DELETE /api/events/:id
+// @access  Private (Organizer/Admin)
+export const deleteEvent = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
+
+        // Check ownership (unless admin)
+        // assuming req.user.role exists or we just check ID match
+        if (event.organizer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: "Not authorized to delete this event" });
+        }
+
+        await event.deleteOne();
+        res.json({ success: true, message: "Event removed" });
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+// @desc    Update Event
+// @route   PUT /api/events/:id
+// @access  Private (Organizer/Admin)
+export const updateEvent = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
+
+        // Check ownership
+        if (event.organizer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: "Not authorized to update this event" });
+        }
+
+        // Update fields provided in body
+        const { title, venue, date, category, description, banner, price, seatMap, status } = req.body;
+
+        if (title) event.title = title;
+        if (venue) event.venue = venue;
+        if (date) event.date = date;
+        if (category) event.category = category;
+        if (description) event.description = description;
+        if (banner) event.banner = banner;
+        if (price) event.price = price;
+        if (seatMap) event.seatMap = seatMap;
+        if (status) event.status = status;
+
+        const updatedEvent = await event.save();
+        res.json({ success: true, event: updatedEvent });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
